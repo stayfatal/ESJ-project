@@ -18,6 +18,8 @@ if (CURL_FOUND)
 endif()
 
 add_subdirectory(tgbot-cpp)
+add_subdirectory(src/dataBase)
 add_executable(${project} src/main.cpp)
 
 target_link_libraries(${project} TgBot ${CMAKE_THREAD_LIBS_INIT} ${OPENSSL_LIBRARIES} ${Boost_LIBRARIES} ${CURL_LIBRARIES})
+target_link_libraries(${project} dataBase)
