@@ -30,4 +30,9 @@ bool registration(string name, int64_t chatId);
 bool isRegistered(int64_t chatId);
 };
 
+class HomeWorkDataBase : private DataBase{
+public:
+    HomeWorkDataBase(string fileName);
+};
+
 #endif

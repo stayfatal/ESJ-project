@@ -95,3 +95,5 @@ bool RegistrationDataBase::isRegistered(int64_t chatId){
         return false;
     }
 }
+
+HomeWorkDataBase::HomeWorkDataBase(string fileName) : DataBase(fileName){}
