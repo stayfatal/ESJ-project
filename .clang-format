@@ -1,0 +1,10 @@
+---
+# Этот файл является примером конфигурации для Clang Format
+
+# Основные параметры
+BasedOnStyle: Google
+
+# Дополнительные параметры (по вашему усмотрению)
+ColumnLimit: 120
+# AllowShortIfStatementsOnASingleLine: true
+# ...
