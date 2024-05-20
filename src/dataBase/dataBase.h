@@ -15,8 +15,6 @@ class DataBase {
  public:
   DataBase(string fileName);
 
-  int findLine(string line);
-
   void editDb(int line, string newLine, bool overwrite = true);
 };
 
@@ -24,16 +22,22 @@ class RegistrationDataBase : private DataBase {
  public:
   RegistrationDataBase(string fileName);
 
-  int findId(int64_t id);
-
   bool registration(string name, int64_t chatId);
 
+  int find(int64_t id, int fieldNum);
+
+  int findLine(string strLine);
+
   bool isRegistered(int64_t chatId);
+
+  bool isAdmin(int64_t chatId);
 };
 
 class HomeWorkDataBase : private DataBase {
  public:
   HomeWorkDataBase(string fileName);
+
+  int getWeek();
 };
 
 #endif

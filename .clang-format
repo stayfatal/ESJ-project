@@ -5,6 +5,6 @@
 BasedOnStyle: Google
 
 # Дополнительные параметры (по вашему усмотрению)
-ColumnLimit: 120
+ColumnLimit: 180
 # AllowShortIfStatementsOnASingleLine: true
 # ...
