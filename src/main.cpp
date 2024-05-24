@@ -14,18 +14,20 @@ void setCommandsMenu(TgBot::Bot &bot);
 TgBot::InlineKeyboardMarkup::Ptr mainMenu();
 TgBot::InlineKeyboardMarkup::Ptr homeworkMenu(bool adminAccess);
 TgBot::InlineKeyboardMarkup::Ptr noteMenu();
+void configureFiles(std::unordered_map<std::string, std::vector<HomeworkDataBase>> &homeWorkBases);
 
 int main() {
-  TgBot::Bot bot("7031000270:AAFA_R8OMb_N3VZteuLNKSpBGfo9b4eVxD4");
+  TgBot::Bot bot("6754420400:AAFFvP4JGhKlgnRVCQrERYe096WliGeg5yg");
   RegistrationDataBase registrationDataBase("registrationDataBase.txt");
-  HomeWorkDataBase homeWorkGr25("ИУ5-25Б.txt");
-  HomeWorkDataBase homeWorkGr24("ИУ5-24Б.txt");
-  std::unordered_map<std::string, HomeWorkDataBase> homeWorkBases{{"ИУ5-25Б", homeWorkGr25}, {"ИУ5-24Б", homeWorkGr24}};
+  std::vector<HomeworkDataBase> Group25;
+  std::vector<HomeworkDataBase> Group24;
+  std::unordered_map<std::string, std::vector<HomeworkDataBase>> homeWorkBases{{"ИУ5-25Б", Group25}, {"ИУ5-24Б", Group24}};
   std::unordered_map<int64_t, User> users;
   std::unordered_map<string, bool> isPressed;
   std::unordered_map<int64_t, int32_t> messageIdBuffer;
 
   setCommandsMenu(bot);  // Установка меню с командами
+  configureFiles(homeWorkBases);
 
   // Обработка команды старт
   bot.getEvents().onCommand("start", [&bot, &registrationDataBase, &users](TgBot::Message::Ptr message) {
@@ -50,7 +52,7 @@ int main() {
   });
 
   // Обработка данных который пользователь вводит с клавиатуры
-  bot.getEvents().onNonCommandMessage([&bot, &registrationDataBase, &users](TgBot::Message::Ptr message) {
+  bot.getEvents().onNonCommandMessage([&bot, &registrationDataBase, &users, &homeWorkBases](TgBot::Message::Ptr message) {
     if (users[message->chat->id].isTyping and users[message->chat->id].process == "registration") {
       if (registrationDataBase.registration(message->text, message->chat->id)) {
         bot.getApi().sendMessage(
@@ -60,6 +62,12 @@ int main() {
         bot.getApi().sendMessage(message->chat->id, "Ваше ФИО не было найдено в базе, либо ваш пароль неверен");
       }
       users[message->chat->id].isTyping = false;
+    } else if (users[message->chat->id].isTyping and users[message->chat->id].process == "homework") {
+      std::string group = registrationDataBase.getGroup(message->chat->id);
+      int week = HomeworkDataBase::getWeek(message->text);
+      // printf("TEST: %s\n", homeWorkBases[group][week].group.c_str());
+      //homeWorkBases[group][week].addToDbWithFormatting(message->text);
+      bot.getApi().sendMessage(message->chat->id, "Ваше домашнее задание успешно записано");
     }
   });
 
@@ -84,7 +92,6 @@ int main() {
         isPressed["addHomework"] = false;
 
         bot.getApi().sendMessage(message->chat->id, "Доступные команды:", false, 0, homeworkMenu(registrationDataBase.isAdmin(message->chat->id)));
-        return;
       } else {
         bot.getApi().sendMessage(message->chat->id,
                                  "Зарегистрируйтесь чтобы использовать функции бота. Для регистрации используйте команду /register");
@@ -93,7 +100,7 @@ int main() {
   });
 
   // Обработка нажатий кнопок
-  bot.getEvents().onCallbackQuery([&bot, &isPressed, &registrationDataBase, &messageIdBuffer](TgBot::CallbackQuery::Ptr query) {
+  bot.getEvents().onCallbackQuery([&bot, &isPressed, &registrationDataBase, &messageIdBuffer, &users](TgBot::CallbackQuery::Ptr query) {
     if (query->data == "homework") {
       isPressed["showHomework"] = false;
       isPressed["addNoteToHomework"] = false;
@@ -111,12 +118,14 @@ int main() {
       isPressed["addNoteToHomework"] = true;
 
       bot.getApi().editMessageText("Выберете какой тип заметки вы хотите оставить(общие заметки доступны только админам):", query->message->chat->id,
-                        query->message->messageId, "", "", false, noteMenu());
+                                   query->message->messageId, "", "", false, noteMenu());
 
     } else if (query->data == "addHomework" and !isPressed["addHomework"]) {
       isPressed["addHomework"] = true;
       bot.getApi().sendMessage(query->message->chat->id,
-                               "Нашишите мне домашнее задание которое хотите добавить в формате:\nНомер недели:День недели:Предмет");
+                               "Нашишите мне домашнее задание которое хотите добавить в формате:\nНомер недели:День недели:Предмет:Задание");
+      users[query->message->chat->id].process = "homework";
+      users[query->message->chat->id].isTyping=true;
     } else if (query->data == "addUserNote") {
     } else if (query->data == "addGlobalNote") {
     }
@@ -255,4 +264,13 @@ TgBot::InlineKeyboardMarkup::Ptr noteMenu() {
   keyboard->inlineKeyboard.push_back(row3);
 
   return keyboard;
+}
+
+void configureFiles(std::unordered_map<std::string, std::vector<HomeworkDataBase>> &homeWorkBases) {
+  for (auto i = homeWorkBases.begin(); i != homeWorkBases.end(); i++) {
+    for (int j = 1; j <= 18; j++) {
+      HomeworkDataBase homework(i->first, j);
+      i->second.push_back(homework);
+    }
+  }
 }

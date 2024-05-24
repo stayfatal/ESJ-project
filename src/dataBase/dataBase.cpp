@@ -18,7 +18,8 @@ DataBase::DataBase(string fileName) {
   this->path = folder + fileName;
 }
 
-void DataBase::editDb(int line, string newLine, bool overwrite) {
+// Функция изменения базы данных принимает номер строки, новую строку, и флаг: false дозапись, true перезапись
+void DataBase::setLine(int line, string newLine, bool overwrite) {
   std::ifstream in(path);
   vector<string> vec;
   if (in.is_open()) {
@@ -45,7 +46,8 @@ void DataBase::editDb(int line, string newLine, bool overwrite) {
 
 RegistrationDataBase::RegistrationDataBase(string fileName) : DataBase(fileName) {}
 
-int RegistrationDataBase::findLine(string strLine) {
+// Функция сравнивает строку со строкой из файла начиная с определенного индекса и определенной длины и возвращает номер этой строки
+int DataBase::findLine(int index, int length, string strLine) {
   std::ifstream in(path);
   if (in.is_open()) {
     std::string temp;
@@ -62,27 +64,16 @@ int RegistrationDataBase::findLine(string strLine) {
   return -1;
 }
 
-int RegistrationDataBase::find(int64_t id, int fieldNum) {
+// Функция сравнивает значение поля с полем определенной нумерации из файла и возвращает номер строки в которой эти поля совпали(:...:-пример поля)
+int DataBase::findFieldLine(string fieldValue, int fieldNum) {
   std::ifstream in(path);
   if (in.is_open()) {
     string temp;
-    string strId = std::to_string(id);
     int curLine = 0;
     while (std::getline(in, temp)) {
       curLine++;
-      size_t nextIter = 0;
-      size_t prevIter = 0;
-      int counter = 0;
-      while (counter < fieldNum) {
-        prevIter = nextIter;
-        nextIter = temp.find(":", nextIter + 1);
-        if (nextIter == std::string::npos) {
-          nextIter = temp.length();
-          break;
-        }
-        counter++;
-      }
-      if (strId == temp.substr(prevIter + 1, nextIter)) {
+
+      if (fieldValue == findField(temp, fieldNum)) {
         in.close();
         return curLine;
       }
@@ -92,26 +83,69 @@ int RegistrationDataBase::find(int64_t id, int fieldNum) {
   return -1;
 }
 
+// Статическая функция возвращает поле по нумерации из строки
+string DataBase::findField(string str, int fieldNum) {
+  size_t nextIter = 0;
+  size_t prevIter = 0;
+  int counter = 0;
+  while (counter < fieldNum) {
+    prevIter = nextIter;
+    nextIter = str.find(":", nextIter + 1);
+    if (nextIter == std::string::npos) {
+      nextIter = str.length();
+      break;
+    }
+    counter++;
+  }
+  return str.substr(prevIter + 1, nextIter);
+}
+
+// Функция возвращает строку из файла по номеру
+string DataBase::getLine(int line) {
+  std::ifstream in(path);
+  if (in.is_open()) {
+    string temp;
+    for (int i = 0; i < line; i++) {
+      getline(in, temp);
+    }
+    in.close();
+    return temp;
+  }
+  return "";
+}
+
+// Добавляет в базу данных строку
+void DataBase::addToDb(std::string str) {
+  std::ofstream out(path, std::ios::app);
+  if (out.is_open()) {
+    out << str << std::endl;
+    out.close();
+  }
+}
+
+// Функция регистрирует пользователя в базе данных
 bool RegistrationDataBase::registration(string name, int64_t chatId) {
-  if (findLine(name) != -1) {
-    editDb(findLine(name) - 1, ":" + std::to_string(chatId), false);
+  if (findLine(2, name.length(), name) != -1) {
+    setLine(findLine(2, name.length(), name) - 1, ":" + std::to_string(chatId), false);
     return true;
   } else {
     return false;
   }
 }
 
+// Функция проверяет регистрацию
 bool RegistrationDataBase::isRegistered(int64_t chatId) {
-  if (find(chatId, 5) != -1) {
+  if (findFieldLine(std::to_string(chatId), 5) != -1) {
     return true;
   } else {
     return false;
   }
 }
 
-HomeWorkDataBase::HomeWorkDataBase(string fileName) : DataBase(fileName){};
+HomeworkDataBase::HomeworkDataBase(string group, int week) : DataBase("weekHomework/" + group + "/" + std::to_string(week)+".txt"), week(week), group(group){std::cout<<path <<std::endl;};
 
-int HomeWorkDataBase::getWeek() {
+// Функция возвращает текущую неделю
+int HomeworkDataBase::getCurrentWeek() {
   boost::asio::io_context io_context;
 
   boost::posix_time::ptime now = boost::posix_time::second_clock::universal_time();
@@ -127,18 +161,31 @@ int HomeWorkDataBase::getWeek() {
   return week;
 }
 
+// Функция проверяет является ли пользователь админом
 bool RegistrationDataBase::isAdmin(int64_t chatId) {
-  int line = find(chatId, 5);
-  std::ifstream in(path);
-  if (in.is_open()) {
-    string temp;
-    for (int i = 0; i < line; i++) {
-      getline(in, temp);
-    }
-    if (temp[0] == 'A') {
-      return true;
-    }
-    in.close();
+  int line = findFieldLine(std::to_string(chatId), 5);
+  if (getLine(line)[0] == 'A') {
+    return true;
   }
   return false;
+}
+
+// Функция возвращает группу пользователя по его айди
+string RegistrationDataBase::getGroup(int64_t chatId) {
+  int line = findFieldLine(std::to_string(chatId), 5);
+  return findField(getLine(line), 2);
+}
+
+// Функция возвращает значения поля "неделя" типа int
+int HomeworkDataBase::getWeek(std::string str) { return stoi(findField(str, 1)); }
+
+// Функция форматирует строку с полями и записывает в базу данных
+void HomeworkDataBase::addToDbWithFormatting(std::string line) {
+  string weekDay = findField(line, 2);
+  string subject = findField(line, 3);
+  string task = findField(line, 4);
+  std::cout << group << std::endl;
+  std::cout << week << std::endl;
+
+  addToDb(weekDay+"\n"+subject+"->"+task+"\n");
 }

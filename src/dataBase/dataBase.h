@@ -10,12 +10,22 @@ class DataBase {
  protected:
   std::string fileName;
   std::string path;
-  const std::string folder = "/home/stayfatal/projects/ESJ-project/data/";
+  std::string folder = "/home/stayfatal/projects/ESJ-project/data/";
 
  public:
   DataBase(string fileName);
 
-  void editDb(int line, string newLine, bool overwrite = true);
+  int findFieldLine(string str, int fieldNum);
+
+  static std::string findField(std::string str, int fieldNum);
+
+  int findLine(int index, int length, string strLine);
+
+  void setLine(int line, string newLine, bool overwrite = true);
+
+  std::string getLine(int line);
+
+  void addToDb(std::string str);
 };
 
 class RegistrationDataBase : private DataBase {
@@ -24,20 +34,24 @@ class RegistrationDataBase : private DataBase {
 
   bool registration(string name, int64_t chatId);
 
-  int find(int64_t id, int fieldNum);
-
-  int findLine(string strLine);
-
   bool isRegistered(int64_t chatId);
+
+  std::string getGroup(int64_t chatId);
 
   bool isAdmin(int64_t chatId);
 };
 
-class HomeWorkDataBase : private DataBase {
+class HomeworkDataBase : private DataBase {
+ private:
  public:
-  HomeWorkDataBase(string fileName);
+  int week;
+  std::string group;
+  HomeworkDataBase(std::string group, int week);
 
-  int getWeek();
+  void addToDbWithFormatting(std::string line);
+  static int getWeek(std::string str);
+
+  int getCurrentWeek();
 };
 
 #endif
