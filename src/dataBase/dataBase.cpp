@@ -89,7 +89,7 @@ string DataBase::findField(string str, int fieldNum) {
   size_t prevIter = 0;
   int counter = 0;
   while (counter < fieldNum) {
-    prevIter = nextIter;
+    prevIter = nextIter+1*(counter!=0);
     nextIter = str.find(":", nextIter + 1);
     if (nextIter == std::string::npos) {
       nextIter = str.length();
@@ -97,7 +97,7 @@ string DataBase::findField(string str, int fieldNum) {
     }
     counter++;
   }
-  return str.substr(prevIter + 1, nextIter);
+  return str.substr(prevIter, nextIter - prevIter);
 }
 
 // Функция возвращает строку из файла по номеру

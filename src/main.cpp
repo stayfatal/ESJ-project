@@ -64,10 +64,14 @@ int main() {
       users[message->chat->id].isTyping = false;
     } else if (users[message->chat->id].isTyping and users[message->chat->id].process == "homework") {
       std::string group = registrationDataBase.getGroup(message->chat->id);
+      printf("TEST: %s\n", group.c_str());
       int week = HomeworkDataBase::getWeek(message->text);
-      // printf("TEST: %s\n", homeWorkBases[group][week].group.c_str());
-      //homeWorkBases[group][week].addToDbWithFormatting(message->text);
+      printf("TEST: %i\n", week);
+      
+      homeWorkBases[group][week-1].addToDbWithFormatting(message->text);
       bot.getApi().sendMessage(message->chat->id, "Ваше домашнее задание успешно записано");
+
+      users[message->chat->id].isTyping=false;
     }
   });
 
@@ -112,6 +116,7 @@ int main() {
     } else if (query->data == "backToMainMenu") {
       bot.getApi().editMessageText("Вот что я умею:", query->message->chat->id, query->message->messageId, "", "", false, mainMenu());
     } else if (query->data == "showHomework" and !isPressed["showHomework"]) {
+      bot.getApi().deleteMessage(query->message->chat->id,query->message->messageId);
       isPressed["showHomework"] = true;
       bot.getApi().sendMessage(query->message->chat->id, "Вы выбрали группу 1");
     } else if (query->data == "addNoteToHomework" and !isPressed["addNoteToHomework"]) {
@@ -121,6 +126,7 @@ int main() {
                                    query->message->messageId, "", "", false, noteMenu());
 
     } else if (query->data == "addHomework" and !isPressed["addHomework"]) {
+      bot.getApi().deleteMessage(query->message->chat->id,query->message->messageId);
       isPressed["addHomework"] = true;
       bot.getApi().sendMessage(query->message->chat->id,
                                "Нашишите мне домашнее задание которое хотите добавить в формате:\nНомер недели:День недели:Предмет:Задание");

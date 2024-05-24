@@ -51,7 +51,7 @@ class HomeworkDataBase : private DataBase {
   void addToDbWithFormatting(std::string line);
   static int getWeek(std::string str);
 
-  int getCurrentWeek();
+  static int getCurrentWeek();
 };
 
 #endif
