@@ -44,6 +44,20 @@ void DataBase::setLine(int line, string newLine, bool overwrite) {
   }
 }
 
+std::string HomeworkDataBase::printFileIntoStr() {
+  std::ifstream in(path);
+  if (in.is_open()) {
+    std::string result;
+    std::string temp;
+    while (getline(in, temp)) {
+      result += temp + "\n";
+    }
+    in.close();
+    return result;
+  }
+  return "";
+}
+
 RegistrationDataBase::RegistrationDataBase(string fileName) : DataBase(fileName) {}
 
 // Функция сравнивает строку со строкой из файла начиная с определенного индекса и определенной длины и возвращает номер этой строки
@@ -89,7 +103,7 @@ string DataBase::findField(string str, int fieldNum) {
   size_t prevIter = 0;
   int counter = 0;
   while (counter < fieldNum) {
-    prevIter = nextIter+1*(counter!=0);
+    prevIter = nextIter + 1 * (counter != 0);
     nextIter = str.find(":", nextIter + 1);
     if (nextIter == std::string::npos) {
       nextIter = str.length();
@@ -142,7 +156,8 @@ bool RegistrationDataBase::isRegistered(int64_t chatId) {
   }
 }
 
-HomeworkDataBase::HomeworkDataBase(string group, int week) : DataBase("weekHomework/" + group + "/" + std::to_string(week)+".txt"), week(week), group(group){std::cout<<path <<std::endl;};
+HomeworkDataBase::HomeworkDataBase(string group, int week)
+    : DataBase("weekHomework/" + group + "/" + std::to_string(week) + ".txt"), week(week), group(group){};
 
 // Функция возвращает текущую неделю
 int HomeworkDataBase::getCurrentWeek() {
@@ -153,7 +168,7 @@ int HomeworkDataBase::getCurrentWeek() {
   boost::posix_time::ptime semStart(boost::gregorian::date(2024, 2, 5), boost::posix_time::time_duration(0, 0, 0));
 
   boost::posix_time::time_duration diff = now - semStart;
-
+  
   int week = static_cast<int>(diff.total_seconds() / 86400 / 7 + 1);
 
   io_context.run();
@@ -187,5 +202,5 @@ void HomeworkDataBase::addToDbWithFormatting(std::string line) {
   std::cout << group << std::endl;
   std::cout << week << std::endl;
 
-  addToDb(weekDay+"\n"+subject+"->"+task+"\n");
+  addToDb(weekDay + "\n" + subject + "->" + task + "\n");
 }

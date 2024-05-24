@@ -52,6 +52,8 @@ class HomeworkDataBase : private DataBase {
   static int getWeek(std::string str);
 
   static int getCurrentWeek();
+
+  std::string printFileIntoStr();
 };
 
 #endif

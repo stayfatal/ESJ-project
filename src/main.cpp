@@ -8,12 +8,14 @@
 struct User {
   std::string process;
   bool isTyping = false;
+  int weekPage;
 };
 
 void setCommandsMenu(TgBot::Bot &bot);
 TgBot::InlineKeyboardMarkup::Ptr mainMenu();
 TgBot::InlineKeyboardMarkup::Ptr homeworkMenu(bool adminAccess);
 TgBot::InlineKeyboardMarkup::Ptr noteMenu();
+TgBot::InlineKeyboardMarkup::Ptr showHomeworkMenu();
 void configureFiles(std::unordered_map<std::string, std::vector<HomeworkDataBase>> &homeWorkBases);
 
 int main() {
@@ -64,14 +66,12 @@ int main() {
       users[message->chat->id].isTyping = false;
     } else if (users[message->chat->id].isTyping and users[message->chat->id].process == "homework") {
       std::string group = registrationDataBase.getGroup(message->chat->id);
-      printf("TEST: %s\n", group.c_str());
       int week = HomeworkDataBase::getWeek(message->text);
-      printf("TEST: %i\n", week);
-      
-      homeWorkBases[group][week-1].addToDbWithFormatting(message->text);
+
+      homeWorkBases[group][week - 1].addToDbWithFormatting(message->text);
       bot.getApi().sendMessage(message->chat->id, "Ваше домашнее задание успешно записано");
 
-      users[message->chat->id].isTyping=false;
+      users[message->chat->id].isTyping = false;
     }
   });
 
@@ -104,8 +104,10 @@ int main() {
   });
 
   // Обработка нажатий кнопок
-  bot.getEvents().onCallbackQuery([&bot, &isPressed, &registrationDataBase, &messageIdBuffer, &users](TgBot::CallbackQuery::Ptr query) {
+  bot.getEvents().onCallbackQuery([&bot, &isPressed, &registrationDataBase, &messageIdBuffer, &users,
+                                   &homeWorkBases](TgBot::CallbackQuery::Ptr query) {
     if (query->data == "homework") {
+      // homework
       isPressed["showHomework"] = false;
       isPressed["addNoteToHomework"] = false;
       isPressed["addHomework"] = false;
@@ -113,27 +115,57 @@ int main() {
       bot.getApi().editMessageText("Меню домашки:", query->message->chat->id, query->message->messageId, "", "", false,
                                    homeworkMenu(registrationDataBase.isAdmin(query->message->chat->id)));
     } else if (query->data == "notifications") {
+      // notifications
     } else if (query->data == "backToMainMenu") {
+      // back to main menu
       bot.getApi().editMessageText("Вот что я умею:", query->message->chat->id, query->message->messageId, "", "", false, mainMenu());
     } else if (query->data == "showHomework" and !isPressed["showHomework"]) {
-      bot.getApi().deleteMessage(query->message->chat->id,query->message->messageId);
+      // showHomework
+      bot.getApi().deleteMessage(query->message->chat->id, query->message->messageId);
       isPressed["showHomework"] = true;
-      bot.getApi().sendMessage(query->message->chat->id, "Вы выбрали группу 1");
+      std::string group = registrationDataBase.getGroup(query->message->chat->id);
+      users[query->message->chat->id].weekPage = HomeworkDataBase::getCurrentWeek();
+      bot.getApi().sendMessage(query->message->chat->id,
+                               std::to_string(users[query->message->chat->id].weekPage) + " неделя\n" +
+                                   homeWorkBases[group][users[query->message->chat->id].weekPage - 1].printFileIntoStr(),
+                               false, 0, showHomeworkMenu());
     } else if (query->data == "addNoteToHomework" and !isPressed["addNoteToHomework"]) {
+      // addNoteToHomework
       isPressed["addNoteToHomework"] = true;
 
       bot.getApi().editMessageText("Выберете какой тип заметки вы хотите оставить(общие заметки доступны только админам):", query->message->chat->id,
                                    query->message->messageId, "", "", false, noteMenu());
 
     } else if (query->data == "addHomework" and !isPressed["addHomework"]) {
-      bot.getApi().deleteMessage(query->message->chat->id,query->message->messageId);
+      // addHomework
+      bot.getApi().deleteMessage(query->message->chat->id, query->message->messageId);
       isPressed["addHomework"] = true;
       bot.getApi().sendMessage(query->message->chat->id,
                                "Нашишите мне домашнее задание которое хотите добавить в формате:\nНомер недели:День недели:Предмет:Задание");
       users[query->message->chat->id].process = "homework";
-      users[query->message->chat->id].isTyping=true;
+      users[query->message->chat->id].isTyping = true;
     } else if (query->data == "addUserNote") {
+      // addUserNote
     } else if (query->data == "addGlobalNote") {
+      // addGlobalNote
+    } else if (query->data == "prevWeek") {
+      // prevWeek
+      if (users[query->message->chat->id].weekPage - 1 >= 1) {
+        users[query->message->chat->id].weekPage -= 1;
+        std::string group = registrationDataBase.getGroup(query->message->chat->id);
+        bot.getApi().editMessageText(std::to_string(users[query->message->chat->id].weekPage) + " неделя\n" +
+                                         homeWorkBases[group][users[query->message->chat->id].weekPage - 1].printFileIntoStr(),
+                                     query->message->chat->id, query->message->messageId, "", "", false, showHomeworkMenu());
+      }
+    } else if (query->data == "nextWeek") {
+      // nextWeek
+      if (users[query->message->chat->id].weekPage + 1 <= 18) {
+        users[query->message->chat->id].weekPage += 1;
+        std::string group = registrationDataBase.getGroup(query->message->chat->id);
+        bot.getApi().editMessageText(std::to_string(users[query->message->chat->id].weekPage) + " неделя\n" +
+                                         homeWorkBases[group][users[query->message->chat->id].weekPage - 1].printFileIntoStr(),
+                                     query->message->chat->id, query->message->messageId, "", "", false, showHomeworkMenu());
+      }
     }
   });
 
@@ -279,4 +311,30 @@ void configureFiles(std::unordered_map<std::string, std::vector<HomeworkDataBase
       i->second.push_back(homework);
     }
   }
+}
+
+// Функция возвращающая кнопки меню показа дз
+TgBot::InlineKeyboardMarkup::Ptr showHomeworkMenu() {
+  TgBot::InlineKeyboardMarkup::Ptr keyboard(new TgBot::InlineKeyboardMarkup);
+
+  std::vector<TgBot::InlineKeyboardButton::Ptr> row1;
+  TgBot::InlineKeyboardButton::Ptr button1(new TgBot::InlineKeyboardButton);
+  TgBot::InlineKeyboardButton::Ptr button2(new TgBot::InlineKeyboardButton);
+  button1->text = "Предыдущая неделя";
+  button1->callbackData = "prevWeek";
+  button2->text = "Следующая неделя";
+  button2->callbackData = "nextWeek";
+  row1.push_back(button1);
+  row1.push_back(button2);
+
+  std::vector<TgBot::InlineKeyboardButton::Ptr> row2;
+  TgBot::InlineKeyboardButton::Ptr button3(new TgBot::InlineKeyboardButton);
+  button3->text = "Меню";
+  button3->callbackData = "backToMainMenu";
+  row2.push_back(button3);
+
+  keyboard->inlineKeyboard.push_back(row1);
+  keyboard->inlineKeyboard.push_back(row2);
+
+  return keyboard;
 }
