@@ -6,8 +6,16 @@
 
 #include <boost/asio.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
-
 using std::string;
+enum class Day {Monday = 1, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday};
+struct date {
+
+  Day day;
+  int hours;
+  int minutes;
+  
+};
+
 
 class DataBase {
  protected:
@@ -57,6 +65,22 @@ class HomeworkDataBase : private DataBase {
   static int getCurrentWeek(boost::posix_time::ptime now);
 
   std::string showHomework();
+};
+
+class TeacherDataBase: private DataBase{
+  private:
+  public:
+    std::string subject;
+    std::string first_name;
+    std::string surname;
+    std::string father_name;
+    TeacherDataBase(std::string subject, std::string surname);
+
+    bool addDate(date date);
+    std::string showTeacherInformation();
+    std::string showShedule();
+
+
 };
 
 #endif

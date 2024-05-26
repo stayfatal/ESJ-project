@@ -209,3 +209,12 @@ std::string HomeworkDataBase::showHomework() {
   }
   return result;
 }
+
+TeacherDataBase::TeacherDataBase(string subject, std::string surname)
+    : DataBase("teacherShedule/" + subject + "/" + surname + ".txt"), subject(subject), surname(surname){};
+
+bool TeacherDataBase::addDate(date date){
+  
+  //addToDb(date);
+  return true;
+}
