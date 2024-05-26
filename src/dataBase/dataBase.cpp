@@ -123,6 +123,7 @@ void DataBase::addToDb(std::string str) {
   }
 }
 
+
 // Функция регистрирует пользователя в базе данных
 bool RegistrationDataBase::registration(string name, int64_t chatId) {
   if (findLine(2, name.length(), name) != -1) {
@@ -215,6 +216,28 @@ TeacherDataBase::TeacherDataBase(string subject, std::string surname)
 
 bool TeacherDataBase::addDate(date date){
   
-  //addToDb(date);
+  addToDb(date);
   return true;
+}
+
+void DataBase::addToDb(date Date) {
+  std::ofstream out(path, std::ios::app);
+  if (out.is_open()) {
+    out << "Week day: " << Date.day << ". Time: " << Date.hours << ":"  << Date.minutes << std::endl;
+    out.close();
+  }
+}
+
+std::ostream& operator << (std::ostream& out, const Day& d){
+   switch(d) {
+      case Day::Monday: return (out << "Monday");
+      case Day::Tuesday: return (out << "Tuesday");
+      case Day::Wednesday:return (out << "Wednesday");
+      case Day::Thursday:return (out << "Thursday");
+      case Day::Friday:return (out << "Friday");
+      case Day::Saturday:return (out << "Saturday");
+      case Day::Sunday:return (out << "Sunday");
+
+   }
+   return (out);
 }

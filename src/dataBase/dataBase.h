@@ -15,6 +15,8 @@ struct date {
   int minutes;
   
 };
+std::ostream& operator << (std::ostream& out, const Day& d);
+
 
 
 class DataBase {
@@ -37,6 +39,7 @@ class DataBase {
   std::string getLine(int line);
 
   void addToDb(std::string str);
+  void addToDb(date date);
 };
 
 class RegistrationDataBase : private DataBase {
