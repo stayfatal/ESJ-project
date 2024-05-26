@@ -37,10 +37,10 @@ int main() {
   bot.getEvents().onCommand("start", [&bot, &userDataBase, &users](TgBot::Message::Ptr message) {
     if (!users[message->chat->id].isTyping) {
       bot.getApi().sendMessage(message->chat->id,
-                               "Hi!\n I am an EHS (Student's Electronic Journal) – your assistant in studies. \n With my help, you can: \n"
-                               "Keep track of current homework and deadlines \n Track your progress \n Receive "
-                               "notifications about new assignments and grades \nStart with the /register command to register and start"
-                               "to use all my possibilities!\nGood luck with your studies!");
+                               "Привет! \n👋 Я ЭЖС (Электронный Журнал Студента) – ваш помощник в учебе. \n📚 С моей помощью вы можете: \n✅ "
+                               "Следить за текущими домашними заданиями и дедлайнами \n✅ Отслеживать свою успеваемость \n✅ Получать "
+                               "уведомления о новых заданиях и оценках \nНачните с команды /register, чтобы пройти регистрацию и начать "
+                               "использовать все мои возможности!\nУдачи в учебе! 🚀");
     }
   });
 
@@ -49,9 +49,9 @@ int main() {
     if (!userDataBase.isRegistered(message->chat->id)) {
       users[message->chat->id].isTyping = true;
       users[message->chat->id].process = "registration";
-      bot.getApi().sendMessage(message->chat->id, "Enter your data in the format:\nGroup:Full Name:Password");
+      bot.getApi().sendMessage(message->chat->id, "Введите ваши данные в формате:\nГруппа:ФИО:Пароль\nex: ИУ7-15Б:Иванов Иван Иванович:123");
     } else {
-      bot.getApi().sendMessage(message->chat->id, "You are already registered");
+      bot.getApi().sendMessage(message->chat->id, "Вы уже зарегистрированы");
     }
   });
 
@@ -60,10 +60,9 @@ int main() {
     if (users[message->chat->id].isTyping && users[message->chat->id].process == "registration") {
       if (userDataBase.registration(message->text, message->chat->id)) {
         bot.getApi().sendMessage(message->chat->id,
-                                 "You have successfully registered in the system, now you have the opportunity to use all the functions of the bot, "
-                                 "to do this, write /menu");
+                                 "Вы успешно зарегистрировались в системе, теперь у вас есть возможность пользоваться всеми функциями бота, для этого напишите, /menu");
       } else {
-        bot.getApi().sendMessage(message->chat->id, "Your full name was not found in the database, or your password is incorrect");
+        bot.getApi().sendMessage(message->chat->id, "Ваше ФИО не было найдено в базе, либо ваш пароль неверен");
       }
       users[message->chat->id].isTyping = false;
     } else if (users[message->chat->id].isTyping && users[message->chat->id].process == "homework") {
@@ -71,7 +70,7 @@ int main() {
       int week = HomeworkDataBase::getWeek(message->text);
 
       homeWorkBases[group][week - 1].addHomework(message->text);
-      bot.getApi().sendMessage(message->chat->id, "Your homework has been successfully recorded");
+      bot.getApi().sendMessage(message->chat->id, "Ваше домашнее задание успешно записано");
 
       users[message->chat->id].isTyping = false;
     } else if (users[message->chat->id].isTyping && users[message->chat->id].process == "globalMes") {
@@ -81,7 +80,7 @@ int main() {
           bot.getApi().sendMessage(*i, message->text);
         }
       }
-      bot.getApi().sendMessage(message->chat->id, "Your message was sent");
+      bot.getApi().sendMessage(message->chat->id, "Ваше сообщение было отправлено");
       users[message->chat->id].isTyping=false;
     }
   });
@@ -90,9 +89,9 @@ int main() {
   bot.getEvents().onCommand("menu", [&bot, &userDataBase, &users](TgBot::Message::Ptr message) {
     if (!users[message->chat->id].isTyping) {
       if (userDataBase.isRegistered(message->chat->id)) {
-        bot.getApi().sendMessage(message->chat->id, "That's what I can do.", false, 0, mainMenu());
+        bot.getApi().sendMessage(message->chat->id, "Вот что я умею", false, 0, mainMenu());
       } else {
-        bot.getApi().sendMessage(message->chat->id, "Register to use the bot's features. To register, use the /register command");
+        bot.getApi().sendMessage(message->chat->id, "Зарегистрируйтесь чтобы использовать функции бота. Для регистрации используйте команду /register");
       }
     }
   });
@@ -101,9 +100,9 @@ int main() {
   bot.getEvents().onCommand("homework", [&bot, &users, &userDataBase](TgBot::Message::Ptr message) {
     if (!users[message->chat->id].isTyping) {
       if (userDataBase.isRegistered(message->chat->id)) {
-        bot.getApi().sendMessage(message->chat->id, "Available commands:", false, 0, homeworkMenu(userDataBase.isAdmin(message->chat->id)));
+        bot.getApi().sendMessage(message->chat->id, "Доступные команды:", false, 0, homeworkMenu(userDataBase.isAdmin(message->chat->id)));
       } else {
-        bot.getApi().sendMessage(message->chat->id, "Register to use the bot's features. To register, use the /register command");
+        bot.getApi().sendMessage(message->chat->id, "Зарегистрируйтесь чтобы использовать функции бота. Для регистрации используйте команду /register");
       }
     }
   });
@@ -113,7 +112,7 @@ int main() {
     if (query->data == "homework") {
       // homework
 
-      bot.getApi().editMessageText("Homework menu:", query->message->chat->id, query->message->messageId, "", "", false,
+      bot.getApi().editMessageText("Меню домашки:", query->message->chat->id, query->message->messageId, "", "", false,
                                    homeworkMenu(userDataBase.isAdmin(query->message->chat->id)));
     } else if (query->data == "notifications") {
       // notifications
@@ -123,7 +122,7 @@ int main() {
                             userDataBase.isAdminNotificationsOn(query->message->chat->id), userDataBase.isAdmin(query->message->chat->id)));
     } else if (query->data == "backToMainMenu") {
       // back to main menu
-      bot.getApi().editMessageText("That's what I can do:", query->message->chat->id, query->message->messageId, "", "", false, mainMenu());
+      bot.getApi().editMessageText("Вот что я умею:", query->message->chat->id, query->message->messageId, "", "", false, mainMenu());
     } else if (query->data == "exitMenu") {
       bot.getApi().deleteMessage(query->message->chat->id, query->message->messageId);
     } else if (query->data == "showHomework") {
@@ -132,14 +131,14 @@ int main() {
       std::string group = userDataBase.getGroup(query->message->chat->id);
       users[query->message->chat->id].weekPage = HomeworkDataBase::getCurrentWeek(currentTime);
       bot.getApi().sendMessage(query->message->chat->id,
-                               std::to_string(users[query->message->chat->id].weekPage) + " week\n" +
+                               std::to_string(users[query->message->chat->id].weekPage) + " неделя\n" +
                                    homeWorkBases[group][users[query->message->chat->id].weekPage - 1].showHomework(),
                                false, 0, showHomeworkMenu());
     } else if (query->data == "addHomework") {
       // addHomework
       bot.getApi().deleteMessage(query->message->chat->id, query->message->messageId);
       bot.getApi().sendMessage(query->message->chat->id,
-                               "Write me the homework you want to add in the format:\nnumber of the week:Day of the week:Subject:Task");
+                               "Нашишите мне домашнее задание которое хотите добавить в формате:\nНомер недели:День недели:Предмет:Задание");
       users[query->message->chat->id].process = "homework";
       users[query->message->chat->id].isTyping = true;
     } else if (query->data == "prevWeek") {
@@ -147,7 +146,7 @@ int main() {
       if (users[query->message->chat->id].weekPage - 1 >= 1) {
         users[query->message->chat->id].weekPage -= 1;
         std::string group = userDataBase.getGroup(query->message->chat->id);
-        bot.getApi().editMessageText(std::to_string(users[query->message->chat->id].weekPage) + " week\n" +
+        bot.getApi().editMessageText(std::to_string(users[query->message->chat->id].weekPage) + " неделя\n" +
                                          homeWorkBases[group][users[query->message->chat->id].weekPage - 1].showHomework(),
                                      query->message->chat->id, query->message->messageId, "", "", false, showHomeworkMenu());
       }
@@ -156,7 +155,7 @@ int main() {
       if (users[query->message->chat->id].weekPage + 1 <= 18) {
         users[query->message->chat->id].weekPage += 1;
         std::string group = userDataBase.getGroup(query->message->chat->id);
-        bot.getApi().editMessageText(std::to_string(users[query->message->chat->id].weekPage) + " week\n" +
+        bot.getApi().editMessageText(std::to_string(users[query->message->chat->id].weekPage) + " неделя\n" +
                                          homeWorkBases[group][users[query->message->chat->id].weekPage - 1].showHomework(),
                                      query->message->chat->id, query->message->messageId, "", "", false, showHomeworkMenu());
       }
@@ -208,23 +207,23 @@ void setCommandsMenu(TgBot::Bot &bot) {
 
   TgBot::BotCommand::Ptr startCommand(new TgBot::BotCommand);
   startCommand->command = "start";
-  startCommand->description = "Start";
+  startCommand->description = "Начать";
 
   TgBot::BotCommand::Ptr regCommand(new TgBot::BotCommand);
   regCommand->command = "register";
-  regCommand->description = "Register";
+  regCommand->description = "Зарегестрироваться";
 
   TgBot::BotCommand::Ptr menuCommand(new TgBot::BotCommand);
   menuCommand->command = "menu";
-  menuCommand->description = "Manu";
+  menuCommand->description = "Меню";
 
   TgBot::BotCommand::Ptr homeworkCommand(new TgBot::BotCommand);
   homeworkCommand->command = "homework";
-  homeworkCommand->description = "Homework";
+  homeworkCommand->description = "Домашнее задание";
 
   TgBot::BotCommand::Ptr notifyCommand(new TgBot::BotCommand);
   notifyCommand->command = "notifications";
-  notifyCommand->description = "Notifications";
+  notifyCommand->description = "Уведомления";
 
   commands.push_back(startCommand);
   commands.push_back(regCommand);
@@ -240,19 +239,19 @@ TgBot::InlineKeyboardMarkup::Ptr mainMenu() {
   TgBot::InlineKeyboardMarkup::Ptr keyboard(new TgBot::InlineKeyboardMarkup);
   std::vector<TgBot::InlineKeyboardButton::Ptr> row1;
   TgBot::InlineKeyboardButton::Ptr button1(new TgBot::InlineKeyboardButton);
-  button1->text = "Homework";
+  button1->text = "Домашнее задание";
   button1->callbackData = "homework";
   row1.push_back(button1);
 
   std::vector<TgBot::InlineKeyboardButton::Ptr> row2;
   TgBot::InlineKeyboardButton::Ptr button2(new TgBot::InlineKeyboardButton);
-  button2->text = "Notification settins";
+  button2->text = "Настройки уведомлений";
   button2->callbackData = "notifications";
   row2.push_back(button2);
 
   std::vector<TgBot::InlineKeyboardButton::Ptr> row3;
   TgBot::InlineKeyboardButton::Ptr button3(new TgBot::InlineKeyboardButton);
-  button3->text = "Exit menu";
+  button3->text = "Выход из меню";
   button3->callbackData = "exitMenu";
   row3.push_back(button3);
 
@@ -268,7 +267,7 @@ TgBot::InlineKeyboardMarkup::Ptr homeworkMenu(bool adminAccess) {
 
   std::vector<TgBot::InlineKeyboardButton::Ptr> row1;
   TgBot::InlineKeyboardButton::Ptr button1(new TgBot::InlineKeyboardButton);
-  button1->text = "Show homework";
+  button1->text = "Посмотреть домашнее задание";
   button1->callbackData = "showHomework";
   row1.push_back(button1);
 
@@ -277,7 +276,7 @@ TgBot::InlineKeyboardMarkup::Ptr homeworkMenu(bool adminAccess) {
   if (adminAccess) {
     std::vector<TgBot::InlineKeyboardButton::Ptr> row2;
     TgBot::InlineKeyboardButton::Ptr button2(new TgBot::InlineKeyboardButton);
-    button2->text = "Add new homework";
+    button2->text = "Добавить новое домашнее задание";
     button2->callbackData = "addHomework";
     row2.push_back(button2);
 
@@ -286,7 +285,7 @@ TgBot::InlineKeyboardMarkup::Ptr homeworkMenu(bool adminAccess) {
 
   std::vector<TgBot::InlineKeyboardButton::Ptr> row3;
   TgBot::InlineKeyboardButton::Ptr button3(new TgBot::InlineKeyboardButton);
-  button3->text = "Menu";
+  button3->text = "Меню";
   button3->callbackData = "backToMainMenu";
   row3.push_back(button3);
 
@@ -311,16 +310,16 @@ TgBot::InlineKeyboardMarkup::Ptr showHomeworkMenu() {
   std::vector<TgBot::InlineKeyboardButton::Ptr> row1;
   TgBot::InlineKeyboardButton::Ptr button1(new TgBot::InlineKeyboardButton);
   TgBot::InlineKeyboardButton::Ptr button2(new TgBot::InlineKeyboardButton);
-  button1->text = "Previous week";
+  button1->text = "Предыдущая неделя";
   button1->callbackData = "prevWeek";
-  button2->text = "Next week";
+  button2->text = "Следующая неделя";
   button2->callbackData = "nextWeek";
   row1.push_back(button1);
   row1.push_back(button2);
 
   std::vector<TgBot::InlineKeyboardButton::Ptr> row2;
   TgBot::InlineKeyboardButton::Ptr button3(new TgBot::InlineKeyboardButton);
-  button3->text = "Menu";
+  button3->text = "Меню";
   button3->callbackData = "backToMainMenu";
   row2.push_back(button3);
 
@@ -336,21 +335,21 @@ TgBot::InlineKeyboardMarkup::Ptr notificationsMenu(bool isOn1, bool isOn2, bool 
   std::vector<TgBot::InlineKeyboardButton::Ptr> row1;
   TgBot::InlineKeyboardButton::Ptr button1(new TgBot::InlineKeyboardButton);
   std::string isOnStr1 = (isOn1 ? "ON" : "OFF");
-  button1->text = "Advance notice of homework submission -> " + isOnStr1;
+  button1->text = "Уведомление о сдаче домашнего задания -> " + isOnStr1;
   button1->callbackData = "advanceNotice";
   row1.push_back(button1);
 
   std::vector<TgBot::InlineKeyboardButton::Ptr> row2;
   TgBot::InlineKeyboardButton::Ptr button2(new TgBot::InlineKeyboardButton);
   std::string isOnStr2 = (isOn2 ? "ON" : "OFF");
-  button2->text = "Notifications from admins -> " + isOnStr2;
+  button2->text = "Уведомления от администраторов -> " + isOnStr2;
   button2->callbackData = "adminNotice";
   row2.push_back(button2);
 
   if (adminAccess) {
     std::vector<TgBot::InlineKeyboardButton::Ptr> row3;
     TgBot::InlineKeyboardButton::Ptr button3(new TgBot::InlineKeyboardButton);
-    button3->text = "Send message to your group";
+    button3->text = "Отправьте сообщение в свою группу";
     button3->callbackData = "globalMessage";
     row3.push_back(button3);
 
@@ -359,7 +358,7 @@ TgBot::InlineKeyboardMarkup::Ptr notificationsMenu(bool isOn1, bool isOn2, bool 
 
   std::vector<TgBot::InlineKeyboardButton::Ptr> row4;
   TgBot::InlineKeyboardButton::Ptr button4(new TgBot::InlineKeyboardButton);
-  button4->text = "Menu";
+  button4->text = "Меню";
   button4->callbackData = "backToMainMenu";
   row4.push_back(button4);
 
