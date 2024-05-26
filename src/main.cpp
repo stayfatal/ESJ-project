@@ -117,7 +117,7 @@ int main() {
     } else if (query->data == "notifications") {
       // notifications
       bot.getApi().editMessageText(
-          "Notifications settings:", query->message->chat->id, query->message->messageId, "", "", false,
+          "Найстройки уведомлений:", query->message->chat->id, query->message->messageId, "", "", false,
           notificationsMenu(userDataBase.isAdvanceNotificationsOn(query->message->chat->id),
                             userDataBase.isAdminNotificationsOn(query->message->chat->id), userDataBase.isAdmin(query->message->chat->id)));
     } else if (query->data == "backToMainMenu") {
@@ -166,7 +166,7 @@ int main() {
         userDataBase.switchAdvanceNotifications(query->message->chat->id, "1");
       }
       bot.getApi().editMessageText(
-          "Notifications settings:", query->message->chat->id, query->message->messageId, "", "", false,
+          "Найстройки уведомлений:", query->message->chat->id, query->message->messageId, "", "", false,
           notificationsMenu(userDataBase.isAdvanceNotificationsOn(query->message->chat->id),
                             userDataBase.isAdminNotificationsOn(query->message->chat->id), userDataBase.isAdmin(query->message->chat->id)));
     } else if (query->data == "adminNotice") {
@@ -176,14 +176,14 @@ int main() {
         userDataBase.switchAdminNotifications(query->message->chat->id, "1");
       }
       bot.getApi().editMessageText(
-          "Notifications settings:", query->message->chat->id, query->message->messageId, "", "", false,
+          "Найстройки уведомлений:", query->message->chat->id, query->message->messageId, "", "", false,
           notificationsMenu(userDataBase.isAdvanceNotificationsOn(query->message->chat->id),
                             userDataBase.isAdminNotificationsOn(query->message->chat->id), userDataBase.isAdmin(query->message->chat->id)));
     } else if (query->data == "globalMessage") {
       users[query->message->chat->id].isTyping = true;
       users[query->message->chat->id].process = "globalMes";
       bot.getApi().deleteMessage(query->message->chat->id, query->message->messageId);
-      bot.getApi().sendMessage(query->message->chat->id, "Text me the message");
+      bot.getApi().sendMessage(query->message->chat->id, "Напиши мне текст сообщения");
     }
   });
 
@@ -349,7 +349,7 @@ TgBot::InlineKeyboardMarkup::Ptr notificationsMenu(bool isOn1, bool isOn2, bool 
   if (adminAccess) {
     std::vector<TgBot::InlineKeyboardButton::Ptr> row3;
     TgBot::InlineKeyboardButton::Ptr button3(new TgBot::InlineKeyboardButton);
-    button3->text = "Отправьте сообщение в свою группу";
+    button3->text = "Отправить сообщение в свою группу";
     button3->callbackData = "globalMessage";
     row3.push_back(button3);
 
