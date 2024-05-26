@@ -4,6 +4,9 @@
 #include <fstream>
 #include <iostream>
 
+#include <boost/asio.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
+
 using std::string;
 
 class DataBase {
@@ -48,12 +51,12 @@ class HomeworkDataBase : private DataBase {
   std::string group;
   HomeworkDataBase(std::string group, int week);
 
-  void addToDbWithFormatting(std::string line);
+  bool addHomework(std::string line);
   static int getWeek(std::string str);
 
-  static int getCurrentWeek();
+  static int getCurrentWeek(boost::posix_time::ptime now);
 
-  std::string printFileIntoStr();
+  std::string showHomework();
 };
 
 #endif

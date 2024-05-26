@@ -44,20 +44,6 @@ void DataBase::setLine(int line, string newLine, bool overwrite) {
   }
 }
 
-std::string HomeworkDataBase::printFileIntoStr() {
-  std::ifstream in(path);
-  if (in.is_open()) {
-    std::string result;
-    std::string temp;
-    while (getline(in, temp)) {
-      result += temp + "\n";
-    }
-    in.close();
-    return result;
-  }
-  return "";
-}
-
 RegistrationDataBase::RegistrationDataBase(string fileName) : DataBase(fileName) {}
 
 // Функция сравнивает строку со строкой из файла начиная с определенного индекса и определенной длины и возвращает номер этой строки
@@ -160,18 +146,12 @@ HomeworkDataBase::HomeworkDataBase(string group, int week)
     : DataBase("weekHomework/" + group + "/" + std::to_string(week) + ".txt"), week(week), group(group){};
 
 // Функция возвращает текущую неделю
-int HomeworkDataBase::getCurrentWeek() {
-  boost::asio::io_context io_context;
-
-  boost::posix_time::ptime now = boost::posix_time::second_clock::universal_time();
-
+int HomeworkDataBase::getCurrentWeek(boost::posix_time::ptime now) {
   boost::posix_time::ptime semStart(boost::gregorian::date(2024, 2, 5), boost::posix_time::time_duration(0, 0, 0));
 
   boost::posix_time::time_duration diff = now - semStart;
-  
-  int week = static_cast<int>(diff.total_seconds() / 86400 / 7 + 1);
 
-  io_context.run();
+  int week = static_cast<int>(diff.total_seconds() / 86400 / 7 + 1);
 
   return week;
 }
@@ -195,12 +175,37 @@ string RegistrationDataBase::getGroup(int64_t chatId) {
 int HomeworkDataBase::getWeek(std::string str) { return stoi(findField(str, 1)); }
 
 // Функция форматирует строку с полями и записывает в базу данных
-void HomeworkDataBase::addToDbWithFormatting(std::string line) {
+bool HomeworkDataBase::addHomework(std::string line) {
+  std::vector<string> weekDays = {"Понедельник", "Вторник", "Среда", "Черверг", "Пятница", "Суббота", "Воскресенье"};
   string weekDay = findField(line, 2);
-  string subject = findField(line, 3);
-  string task = findField(line, 4);
-  std::cout << group << std::endl;
-  std::cout << week << std::endl;
+  for (auto i = weekDays.begin(); i != weekDays.end(); i++) {
+    if (*i == weekDay) {
+      break;
+    } else if (i == weekDays.end()) {
+      return false;
+    }
+  }
 
-  addToDb(weekDay + "\n" + subject + "->" + task + "\n");
+  addToDb(line + "\n");
+  return true;
+}
+
+std::string HomeworkDataBase::showHomework() {
+  std::vector<string> weekDays = {"Понедельник", "Вторник", "Среда", "Черверг", "Пятница", "Суббота", "Воскресенье"};
+  std::string result;
+  for (auto i = weekDays.begin(); i != weekDays.end(); i++) {
+    result+=*i+"\n";
+    std::ifstream in(path);
+    if (in.is_open()) {
+      std::string temp;
+      while (getline(in, temp)) {
+        if (findField(temp, 2) == *i) {
+          result += findField(temp, 3) + " -> " + findField(temp, 4) + "\n";
+        }
+      }
+    }
+    in.close();
+    result+="\n";
+  }
+  return result;
 }
