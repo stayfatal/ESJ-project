@@ -100,7 +100,6 @@ std::vector<int64_t> UserDataBase::getListOfAvalibleUsers(std::string task) {
       std::string temp;
       while (std::getline(in, temp)) {
         if (findField(temp,Fields::Notifications_2)=="1" and findField(temp,Fields::UserId)!="") {
-          printf("Bot username: %s\n", findField(temp,Fields::UserId).c_str());
           result.push_back(stoll(findField(temp,Fields::UserId)));
         }
       }
@@ -351,9 +350,9 @@ std::string TeacherDataBase::showShedule() {
     if (in.is_open()) {
       std::string temp;
       while (getline(in, temp)) {
-        if (findField(temp, 2) == day) {
-          result += findField(temp, 3) + " -> " + findField(temp, 5) + "\n";
-        }
+        // if (findField(temp, 2) == day) {
+        //   result += findField(temp, 3) + " -> " + findField(temp, 5) + "\n";
+        // }
       }
     }
     in.close();

@@ -78,7 +78,6 @@ int main() {
       std::vector<int64_t> list = userDataBase.getListOfAvalibleUsers("globalMes");
       for (auto i = list.begin(); i != list.end(); i++) {
         if (*i != message->chat->id and *i!=0) {
-          printf("ID: %ld\n", *i);
           bot.getApi().sendMessage(*i, message->text);
         }
       }
@@ -184,6 +183,7 @@ int main() {
     } else if (query->data == "globalMessage") {
       users[query->message->chat->id].isTyping = true;
       users[query->message->chat->id].process = "globalMes";
+      bot.getApi().deleteMessage(query->message->chat->id, query->message->messageId);
       bot.getApi().sendMessage(query->message->chat->id, "Text me the message");
     }
   });
