@@ -28,9 +28,9 @@ void DataBase::setLine(int line, string newLine, bool overwrite) {
       vec.push_back(temp);
     }
     if (overwrite) {
-      vec[line] = newLine;
+      vec[line - 1] = newLine;
     } else {
-      vec[line] += newLine;
+      vec[line - 1] += newLine;
     }
     in.close();
   }
@@ -44,7 +44,35 @@ void DataBase::setLine(int line, string newLine, bool overwrite) {
   }
 }
 
-RegistrationDataBase::RegistrationDataBase(string fileName) : DataBase(fileName) {}
+string DataBase::setField(string str, Fields fieldNum, string newField) {
+  size_t nextIter = 0;
+  size_t prevIter = 0;
+  int counter = 0;
+  while (counter < static_cast<int>(fieldNum)) {
+    prevIter = nextIter + 1 * (counter != 0);
+    nextIter = str.find(":", nextIter + 1);
+    if (nextIter == std::string::npos) {
+      nextIter = str.length();
+      break;
+    }
+    counter++;
+  }
+  return str.replace(prevIter, nextIter - prevIter, newField);
+}
+
+void DataBase::setFieldLine(int line, string newField, Fields fieldNum) { setLine(line, setField(getLine(line), fieldNum, newField), true); }
+
+void UserDataBase::switchAdvanceNotifications(int64_t chatId, string switchData) {
+  int line = findFieldLine(std::to_string(chatId), Fields::UserId);
+  setFieldLine(line, switchData, Fields::Notifications_1);
+}
+
+void UserDataBase::switchAdminNotifications(int64_t chatId, string switchData) {
+  int line = findFieldLine(std::to_string(chatId), Fields::UserId);
+  setFieldLine(line, switchData, Fields::Notifications_2);
+}
+
+UserDataBase::UserDataBase(string fileName) : DataBase(fileName) {}
 
 // Функция сравнивает строку со строкой из файла начиная с определенного индекса и определенной длины и возвращает номер этой строки
 int DataBase::findLine(int index, int length, string strLine) {
@@ -54,7 +82,7 @@ int DataBase::findLine(int index, int length, string strLine) {
     int curLine = 0;
     while (std::getline(in, temp)) {
       curLine++;
-      if (temp.substr(2, temp.length() - 2) == strLine) {
+      if (temp.substr(index, temp.length() - index) == strLine) {
         in.close();
         return curLine;
       }
@@ -64,8 +92,28 @@ int DataBase::findLine(int index, int length, string strLine) {
   return -1;
 }
 
+std::vector<int64_t> UserDataBase::getListOfAvalibleUsers(std::string task) {
+  std::vector<int64_t> result;
+  if (task == "globalMes") {
+    std::ifstream in(path);
+    if (in.is_open()) {
+      std::string temp;
+      while (std::getline(in, temp)) {
+        if (findField(temp,Fields::Notifications_2)=="1" and findField(temp,Fields::UserId)!="") {
+          printf("Bot username: %s\n", findField(temp,Fields::UserId).c_str());
+          result.push_back(stoll(findField(temp,Fields::UserId)));
+        }
+      }
+      in.close();
+    }
+  }else if(task=="advanceMes"){
+
+  }
+  return result;
+}
+
 // Функция сравнивает значение поля с полем определенной нумерации из файла и возвращает номер строки в которой эти поля совпали(:...:-пример поля)
-int DataBase::findFieldLine(string fieldValue, int fieldNum) {
+int DataBase::findFieldLine(string fieldValue, Fields fieldNum) {
   std::ifstream in(path);
   if (in.is_open()) {
     string temp;
@@ -84,16 +132,18 @@ int DataBase::findFieldLine(string fieldValue, int fieldNum) {
 }
 
 // Статическая функция возвращает поле по нумерации из строки
-string DataBase::findField(string str, int fieldNum) {
+string DataBase::findField(string str, Fields fieldNum) {
   size_t nextIter = 0;
   size_t prevIter = 0;
   int counter = 0;
-  while (counter < fieldNum) {
+  while (counter < static_cast<int>(fieldNum)) {
     prevIter = nextIter + 1 * (counter != 0);
     nextIter = str.find(":", nextIter + 1);
-    if (nextIter == std::string::npos) {
+    if (nextIter == std::string::npos and counter == static_cast<int>(fieldNum)-1) {
       nextIter = str.length();
       break;
+    }else if(nextIter == std::string::npos){
+      return "";
     }
     counter++;
   }
@@ -123,11 +173,10 @@ void DataBase::addToDb(std::string str) {
   }
 }
 
-
 // Функция регистрирует пользователя в базе данных
-bool RegistrationDataBase::registration(string name, int64_t chatId) {
-  if (findLine(2, name.length(), name) != -1) {
-    setLine(findLine(2, name.length(), name) - 1, ":" + std::to_string(chatId), false);
+bool UserDataBase::registration(string name, int64_t chatId) {
+  if (findLine(6, name.length(), name) != -1) {
+    setLine(findLine(6, name.length(), name), ":" + std::to_string(chatId), false);
     return true;
   } else {
     return false;
@@ -135,12 +184,22 @@ bool RegistrationDataBase::registration(string name, int64_t chatId) {
 }
 
 // Функция проверяет регистрацию
-bool RegistrationDataBase::isRegistered(int64_t chatId) {
-  if (findFieldLine(std::to_string(chatId), 5) != -1) {
+bool UserDataBase::isRegistered(int64_t chatId) {
+  if (findFieldLine(std::to_string(chatId), Fields::UserId) != -1) {
     return true;
   } else {
     return false;
   }
+}
+
+bool UserDataBase::isAdvanceNotificationsOn(int64_t chatId) {
+  int line = findFieldLine(std::to_string(chatId), Fields::UserId);
+  return findField(getLine(line), Fields::Notifications_1) == "1" ? true : false;
+}
+
+bool UserDataBase::isAdminNotificationsOn(int64_t chatId) {
+  int line = findFieldLine(std::to_string(chatId), Fields::UserId);
+  return findField(getLine(line), Fields::Notifications_2) == "1" ? true : false;
 }
 
 HomeworkDataBase::HomeworkDataBase(string group, int week)
@@ -158,8 +217,8 @@ int HomeworkDataBase::getCurrentWeek(boost::posix_time::ptime now) {
 }
 
 // Функция проверяет является ли пользователь админом
-bool RegistrationDataBase::isAdmin(int64_t chatId) {
-  int line = findFieldLine(std::to_string(chatId), 5);
+bool UserDataBase::isAdmin(int64_t chatId) {
+  int line = findFieldLine(std::to_string(chatId), Fields::UserId);
   if (getLine(line)[0] == 'A') {
     return true;
   }
@@ -167,18 +226,18 @@ bool RegistrationDataBase::isAdmin(int64_t chatId) {
 }
 
 // Функция возвращает группу пользователя по его айди
-string RegistrationDataBase::getGroup(int64_t chatId) {
-  int line = findFieldLine(std::to_string(chatId), 5);
-  return findField(getLine(line), 2);
+string UserDataBase::getGroup(int64_t chatId) {
+  int line = findFieldLine(std::to_string(chatId), Fields::UserId);
+  return findField(getLine(line), Fields::Group);
 }
 
 // Функция возвращает значения поля "неделя" типа int
-int HomeworkDataBase::getWeek(std::string str) { return stoi(findField(str, 1)); }
+int HomeworkDataBase::getWeek(std::string str) { return stoi(findField(str, Fields::Week)); }
 
 // Функция форматирует строку с полями и записывает в базу данных
 bool HomeworkDataBase::addHomework(std::string line) {
-  std::vector<string> weekDays = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
-  string weekDay = findField(line, 2);
+  std::vector<string> weekDays = {"Понедельник", "Вторник", "Среда", "Черверг", "Пятница", "Суббота", "Воскресенье"};
+  string weekDay = findField(line, Fields::dayOfWeek);
   for (auto i = weekDays.begin(); i != weekDays.end(); i++) {
     if (*i == weekDay) {
       break;
@@ -192,30 +251,39 @@ bool HomeworkDataBase::addHomework(std::string line) {
 }
 
 std::string HomeworkDataBase::showHomework() {
-  std::vector<string> weekDays = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
+  std::vector<string> weekDays = {"Понедельник", "Вторник", "Среда", "Черверг", "Пятница", "Суббота", "Воскресенье"};
   std::string result;
   for (auto i = weekDays.begin(); i != weekDays.end(); i++) {
-    result+=*i+"\n";
+    result += *i + "\n";
     std::ifstream in(path);
     if (in.is_open()) {
       std::string temp;
       while (getline(in, temp)) {
-        if (findField(temp, 2) == *i) {
-          result += findField(temp, 3) + " -> " + findField(temp, 4) + "\n";
+        if (findField(temp, Fields::dayOfWeek) == *i) {
+          result += findField(temp, Fields::Subject) + " -> " + findField(temp, Fields::Task) + "\n";
         }
       }
     }
     in.close();
-    result+="\n";
+    result += "\n";
   }
   return result;
+}
+
+string HomeworkDataBase::getCurrentDayOfWeek(boost::posix_time::ptime now) {
+  std::vector<string> weekDays = {"Понедельник", "Вторник", "Среда", "Черверг", "Пятница", "Суббота", "Воскресенье"};
+  boost::posix_time::ptime semStart(boost::gregorian::date(2024, 2, 5), boost::posix_time::time_duration(0, 0, 0));
+
+  boost::posix_time::time_duration diff = now - semStart;
+
+  int dayNum = static_cast<int>(diff.total_seconds() / 86400) % 7 + 1;
+  return weekDays[dayNum - 1];
 }
 
 TeacherDataBase::TeacherDataBase(string subject, std::string surname)
     : DataBase("teacherShedule/" + subject + "/" + surname + ".txt"), subject(subject), surname(surname){};
 
-bool TeacherDataBase::addDate(date date){
-  
+bool TeacherDataBase::addDate(date date) {
   addToDb(date);
   return true;
 }
@@ -226,20 +294,6 @@ void DataBase::addToDb(date Date) {
     out << "Week day: " << Date.day << " Time: " << Date.hours << ":"  << Date.minutes << std::endl;
     out.close();
   }
-}
-
-std::string operator += (std::string str, const Day& d){
-   switch(d) {
-      case Day::Monday: return (str += "Monday");
-      case Day::Tuesday: return (str += "Tuesday");
-      case Day::Wednesday:return (str += "Wednesday");
-      case Day::Thursday:return (str += "Thursday");
-      case Day::Friday:return (str += "Friday");
-      case Day::Saturday:return (str += "Saturday");
-      case Day::Sunday:return (str += "Sunday");
-
-   }
-   return (str);
 }
 
 std::ostream& operator << (std::ostream& out, const Day& d){
@@ -254,6 +308,20 @@ std::ostream& operator << (std::ostream& out, const Day& d){
 
    }
    return (out);
+}
+
+std::string operator += (std::string str, const Day& d){
+   switch(d) {
+      case Day::Monday: return (str += "Monday");
+      case Day::Tuesday: return (str += "Tuesday");
+      case Day::Wednesday:return (str += "Wednesday");
+      case Day::Thursday:return (str += "Thursday");
+      case Day::Friday:return (str += "Friday");
+      case Day::Saturday:return (str += "Saturday");
+      case Day::Sunday:return (str += "Sunday");
+
+   }
+   return (str);
 }
 
 bool operator == (std::string str, const Day& d){
@@ -276,7 +344,7 @@ std::string TeacherDataBase::showShedule() {
 
   for ( int i = 0; i < 7; i++ ){
     Day day = static_cast<Day>(i);
-  
+
     result+=day;
     result += '\n';
     std::ifstream in(path);
@@ -290,7 +358,7 @@ std::string TeacherDataBase::showShedule() {
     }
     in.close();
     result+="\n";
-  
+
   }
   return result;
 }

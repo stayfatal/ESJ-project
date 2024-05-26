@@ -14,14 +14,15 @@ struct User {
 void setCommandsMenu(TgBot::Bot &bot);
 TgBot::InlineKeyboardMarkup::Ptr mainMenu();
 TgBot::InlineKeyboardMarkup::Ptr homeworkMenu(bool adminAccess);
-TgBot::InlineKeyboardMarkup::Ptr noteMenu();
 TgBot::InlineKeyboardMarkup::Ptr showHomeworkMenu();
+TgBot::InlineKeyboardMarkup::Ptr notificationsMenu(bool isOn1, bool isOn2, bool adminAccess);
 void configureFiles(std::unordered_map<std::string, std::vector<HomeworkDataBase>> &homeWorkBases);
 void refreshCurrentTime(boost::posix_time::ptime &currentTime);
+int getHours(boost::posix_time::ptime &currentTime);
 
 int main() {
   TgBot::Bot bot("6754420400:AAFFvP4JGhKlgnRVCQrERYe096WliGeg5yg");
-  RegistrationDataBase registrationDataBase("registrationDataBase.txt");
+  UserDataBase userDataBase("userDataBase.txt");
   std::vector<HomeworkDataBase> Group25;
   std::vector<HomeworkDataBase> Group24;
   std::unordered_map<std::string, std::vector<HomeworkDataBase>> homeWorkBases{{"ИУ5-25Б", Group25}, {"ИУ5-24Б", Group24}};
@@ -33,7 +34,7 @@ int main() {
   configureFiles(homeWorkBases);
 
   // Обработка команды старт
-  bot.getEvents().onCommand("start", [&bot, &registrationDataBase, &users](TgBot::Message::Ptr message) {
+  bot.getEvents().onCommand("start", [&bot, &userDataBase, &users](TgBot::Message::Ptr message) {
     if (!users[message->chat->id].isTyping) {
       bot.getApi().sendMessage(message->chat->id,
                                "Hi!\n I am an EHS (Student's Electronic Journal) – your assistant in studies. \n With my help, you can: \n"
@@ -44,8 +45,8 @@ int main() {
   });
 
   // Обработка команды register
-  bot.getEvents().onCommand("register", [&bot, &registrationDataBase, &users](TgBot::Message::Ptr message) {
-    if (!registrationDataBase.isRegistered(message->chat->id)) {
+  bot.getEvents().onCommand("register", [&bot, &userDataBase, &users](TgBot::Message::Ptr message) {
+    if (!userDataBase.isRegistered(message->chat->id)) {
       users[message->chat->id].isTyping = true;
       users[message->chat->id].process = "registration";
       bot.getApi().sendMessage(message->chat->id, "Enter your data in the format:\nGroup:Full Name:Password");
@@ -55,78 +56,86 @@ int main() {
   });
 
   // Обработка данных который пользователь вводит с клавиатуры
-  bot.getEvents().onNonCommandMessage([&bot, &registrationDataBase, &users, &homeWorkBases](TgBot::Message::Ptr message) {
+  bot.getEvents().onNonCommandMessage([&bot, &userDataBase, &users, &homeWorkBases](TgBot::Message::Ptr message) {
     if (users[message->chat->id].isTyping && users[message->chat->id].process == "registration") {
-      if (registrationDataBase.registration(message->text, message->chat->id)) {
-        bot.getApi().sendMessage(
-            message->chat->id,
-            "You have successfully registered in the system, now you have the opportunity to use all the functions of the bot, to do this, write /menu");
+      if (userDataBase.registration(message->text, message->chat->id)) {
+        bot.getApi().sendMessage(message->chat->id,
+                                 "You have successfully registered in the system, now you have the opportunity to use all the functions of the bot, "
+                                 "to do this, write /menu");
       } else {
         bot.getApi().sendMessage(message->chat->id, "Your full name was not found in the database, or your password is incorrect");
       }
       users[message->chat->id].isTyping = false;
     } else if (users[message->chat->id].isTyping && users[message->chat->id].process == "homework") {
-      std::string group = registrationDataBase.getGroup(message->chat->id);
+      std::string group = userDataBase.getGroup(message->chat->id);
       int week = HomeworkDataBase::getWeek(message->text);
 
       homeWorkBases[group][week - 1].addHomework(message->text);
       bot.getApi().sendMessage(message->chat->id, "Your homework has been successfully recorded");
 
       users[message->chat->id].isTyping = false;
+    } else if (users[message->chat->id].isTyping && users[message->chat->id].process == "globalMes") {
+      std::vector<int64_t> list = userDataBase.getListOfAvalibleUsers("globalMes");
+      for (auto i = list.begin(); i != list.end(); i++) {
+        if (*i != message->chat->id and *i!=0) {
+          printf("ID: %ld\n", *i);
+          bot.getApi().sendMessage(*i, message->text);
+        }
+      }
+      bot.getApi().sendMessage(message->chat->id, "Your message was sent");
+      users[message->chat->id].isTyping=false;
     }
   });
 
   // Обработка команды menu
-  bot.getEvents().onCommand("menu", [&bot, &registrationDataBase, &users](TgBot::Message::Ptr message) {
+  bot.getEvents().onCommand("menu", [&bot, &userDataBase, &users](TgBot::Message::Ptr message) {
     if (!users[message->chat->id].isTyping) {
-      if (registrationDataBase.isRegistered(message->chat->id)) {
+      if (userDataBase.isRegistered(message->chat->id)) {
         bot.getApi().sendMessage(message->chat->id, "That's what I can do.", false, 0, mainMenu());
       } else {
-        bot.getApi().sendMessage(message->chat->id,
-                                 "Register to use the bot's features. To register, use the /register command");
+        bot.getApi().sendMessage(message->chat->id, "Register to use the bot's features. To register, use the /register command");
       }
     }
   });
 
   // Обработка команды homework
-  bot.getEvents().onCommand("homework", [&bot, &users, &registrationDataBase](TgBot::Message::Ptr message) {
+  bot.getEvents().onCommand("homework", [&bot, &users, &userDataBase](TgBot::Message::Ptr message) {
     if (!users[message->chat->id].isTyping) {
-      if (registrationDataBase.isRegistered(message->chat->id)) {
-        bot.getApi().sendMessage(message->chat->id, "Available commands:", false, 0, homeworkMenu(registrationDataBase.isAdmin(message->chat->id)));
+      if (userDataBase.isRegistered(message->chat->id)) {
+        bot.getApi().sendMessage(message->chat->id, "Available commands:", false, 0, homeworkMenu(userDataBase.isAdmin(message->chat->id)));
       } else {
-        bot.getApi().sendMessage(message->chat->id,
-                                 "Register to use the bot's features. To register, use the /register command");
+        bot.getApi().sendMessage(message->chat->id, "Register to use the bot's features. To register, use the /register command");
       }
     }
   });
 
   // Обработка нажатий кнопок
-  bot.getEvents().onCallbackQuery([&bot, &registrationDataBase, &users, &homeWorkBases, &currentTime](TgBot::CallbackQuery::Ptr query) {
+  bot.getEvents().onCallbackQuery([&bot, &userDataBase, &users, &homeWorkBases, &currentTime](TgBot::CallbackQuery::Ptr query) {
     if (query->data == "homework") {
       // homework
 
       bot.getApi().editMessageText("Homework menu:", query->message->chat->id, query->message->messageId, "", "", false,
-                                   homeworkMenu(registrationDataBase.isAdmin(query->message->chat->id)));
+                                   homeworkMenu(userDataBase.isAdmin(query->message->chat->id)));
     } else if (query->data == "notifications") {
       // notifications
+      bot.getApi().editMessageText(
+          "Notifications settings:", query->message->chat->id, query->message->messageId, "", "", false,
+          notificationsMenu(userDataBase.isAdvanceNotificationsOn(query->message->chat->id),
+                            userDataBase.isAdminNotificationsOn(query->message->chat->id), userDataBase.isAdmin(query->message->chat->id)));
     } else if (query->data == "backToMainMenu") {
       // back to main menu
       bot.getApi().editMessageText("That's what I can do:", query->message->chat->id, query->message->messageId, "", "", false, mainMenu());
+    } else if (query->data == "exitMenu") {
+      bot.getApi().deleteMessage(query->message->chat->id, query->message->messageId);
     } else if (query->data == "showHomework") {
       // showHomework
       bot.getApi().deleteMessage(query->message->chat->id, query->message->messageId);
-      std::string group = registrationDataBase.getGroup(query->message->chat->id);
+      std::string group = userDataBase.getGroup(query->message->chat->id);
       users[query->message->chat->id].weekPage = HomeworkDataBase::getCurrentWeek(currentTime);
       bot.getApi().sendMessage(query->message->chat->id,
                                std::to_string(users[query->message->chat->id].weekPage) + " week\n" +
                                    homeWorkBases[group][users[query->message->chat->id].weekPage - 1].showHomework(),
                                false, 0, showHomeworkMenu());
-    } else if (query->data == "addNoteToHomework") {
-      // addNoteToHomework
-
-      bot.getApi().editMessageText("Choose which type of note you want to leave (shared notes are only available to admins):", query->message->chat->id,
-                                   query->message->messageId, "", "", false, noteMenu());
-
     } else if (query->data == "addHomework") {
       // addHomework
       bot.getApi().deleteMessage(query->message->chat->id, query->message->messageId);
@@ -134,15 +143,11 @@ int main() {
                                "Write me the homework you want to add in the format:\nnumber of the week:Day of the week:Subject:Task");
       users[query->message->chat->id].process = "homework";
       users[query->message->chat->id].isTyping = true;
-    } else if (query->data == "addUserNote") {
-      // addUserNote
-    } else if (query->data == "addGlobalNote") {
-      // addGlobalNote
     } else if (query->data == "prevWeek") {
       // prevWeek
       if (users[query->message->chat->id].weekPage - 1 >= 1) {
         users[query->message->chat->id].weekPage -= 1;
-        std::string group = registrationDataBase.getGroup(query->message->chat->id);
+        std::string group = userDataBase.getGroup(query->message->chat->id);
         bot.getApi().editMessageText(std::to_string(users[query->message->chat->id].weekPage) + " week\n" +
                                          homeWorkBases[group][users[query->message->chat->id].weekPage - 1].showHomework(),
                                      query->message->chat->id, query->message->messageId, "", "", false, showHomeworkMenu());
@@ -151,11 +156,35 @@ int main() {
       // nextWeek
       if (users[query->message->chat->id].weekPage + 1 <= 18) {
         users[query->message->chat->id].weekPage += 1;
-        std::string group = registrationDataBase.getGroup(query->message->chat->id);
+        std::string group = userDataBase.getGroup(query->message->chat->id);
         bot.getApi().editMessageText(std::to_string(users[query->message->chat->id].weekPage) + " week\n" +
                                          homeWorkBases[group][users[query->message->chat->id].weekPage - 1].showHomework(),
                                      query->message->chat->id, query->message->messageId, "", "", false, showHomeworkMenu());
       }
+    } else if (query->data == "advanceNotice") {
+      if (userDataBase.isAdvanceNotificationsOn(query->message->chat->id)) {
+        userDataBase.switchAdvanceNotifications(query->message->chat->id, "0");
+      } else {
+        userDataBase.switchAdvanceNotifications(query->message->chat->id, "1");
+      }
+      bot.getApi().editMessageText(
+          "Notifications settings:", query->message->chat->id, query->message->messageId, "", "", false,
+          notificationsMenu(userDataBase.isAdvanceNotificationsOn(query->message->chat->id),
+                            userDataBase.isAdminNotificationsOn(query->message->chat->id), userDataBase.isAdmin(query->message->chat->id)));
+    } else if (query->data == "adminNotice") {
+      if (userDataBase.isAdminNotificationsOn(query->message->chat->id)) {
+        userDataBase.switchAdminNotifications(query->message->chat->id, "0");
+      } else {
+        userDataBase.switchAdminNotifications(query->message->chat->id, "1");
+      }
+      bot.getApi().editMessageText(
+          "Notifications settings:", query->message->chat->id, query->message->messageId, "", "", false,
+          notificationsMenu(userDataBase.isAdvanceNotificationsOn(query->message->chat->id),
+                            userDataBase.isAdminNotificationsOn(query->message->chat->id), userDataBase.isAdmin(query->message->chat->id)));
+    } else if (query->data == "globalMessage") {
+      users[query->message->chat->id].isTyping = true;
+      users[query->message->chat->id].process = "globalMes";
+      bot.getApi().sendMessage(query->message->chat->id, "Text me the message");
     }
   });
 
@@ -217,12 +246,19 @@ TgBot::InlineKeyboardMarkup::Ptr mainMenu() {
 
   std::vector<TgBot::InlineKeyboardButton::Ptr> row2;
   TgBot::InlineKeyboardButton::Ptr button2(new TgBot::InlineKeyboardButton);
-  button2->text = "Notifications";
+  button2->text = "Notification settins";
   button2->callbackData = "notifications";
   row2.push_back(button2);
 
+  std::vector<TgBot::InlineKeyboardButton::Ptr> row3;
+  TgBot::InlineKeyboardButton::Ptr button3(new TgBot::InlineKeyboardButton);
+  button3->text = "Exit menu";
+  button3->callbackData = "exitMenu";
+  row3.push_back(button3);
+
   keyboard->inlineKeyboard.push_back(row1);
   keyboard->inlineKeyboard.push_back(row2);
+  keyboard->inlineKeyboard.push_back(row3);
   return keyboard;
 }
 
@@ -236,51 +272,17 @@ TgBot::InlineKeyboardMarkup::Ptr homeworkMenu(bool adminAccess) {
   button1->callbackData = "showHomework";
   row1.push_back(button1);
 
-  std::vector<TgBot::InlineKeyboardButton::Ptr> row2;
-  TgBot::InlineKeyboardButton::Ptr button2(new TgBot::InlineKeyboardButton);
-  button2->text = "Add note to homework";
-  button2->callbackData = "addNoteToHomework";
-  row2.push_back(button2);
-
   keyboard->inlineKeyboard.push_back(row1);
-  keyboard->inlineKeyboard.push_back(row2);
 
   if (adminAccess) {
-    std::vector<TgBot::InlineKeyboardButton::Ptr> row3;
-    TgBot::InlineKeyboardButton::Ptr button3(new TgBot::InlineKeyboardButton);
-    button3->text = "Add new homework";
-    button3->callbackData = "addHomework";
-    row3.push_back(button3);
+    std::vector<TgBot::InlineKeyboardButton::Ptr> row2;
+    TgBot::InlineKeyboardButton::Ptr button2(new TgBot::InlineKeyboardButton);
+    button2->text = "Add new homework";
+    button2->callbackData = "addHomework";
+    row2.push_back(button2);
 
-    keyboard->inlineKeyboard.push_back(row3);
+    keyboard->inlineKeyboard.push_back(row2);
   }
-
-  std::vector<TgBot::InlineKeyboardButton::Ptr> row4;
-  TgBot::InlineKeyboardButton::Ptr button4(new TgBot::InlineKeyboardButton);
-  button4->text = "Menu";
-  button4->callbackData = "backToMainMenu";
-  row4.push_back(button4);
-
-  keyboard->inlineKeyboard.push_back(row4);
-
-  return keyboard;
-}
-
-// Функция возвращающая кнопки меню добавления заметки в дз
-TgBot::InlineKeyboardMarkup::Ptr noteMenu() {
-  TgBot::InlineKeyboardMarkup::Ptr keyboard(new TgBot::InlineKeyboardMarkup);
-
-  std::vector<TgBot::InlineKeyboardButton::Ptr> row1;
-  TgBot::InlineKeyboardButton::Ptr button1(new TgBot::InlineKeyboardButton);
-  button1->text = "Add a personal note";
-  button1->callbackData = "addUserNote";
-  row1.push_back(button1);
-
-  std::vector<TgBot::InlineKeyboardButton::Ptr> row2;
-  TgBot::InlineKeyboardButton::Ptr button2(new TgBot::InlineKeyboardButton);
-  button2->text = "Add a general note";
-  button2->callbackData = "addGlobalNote";
-  row2.push_back(button2);
 
   std::vector<TgBot::InlineKeyboardButton::Ptr> row3;
   TgBot::InlineKeyboardButton::Ptr button3(new TgBot::InlineKeyboardButton);
@@ -288,8 +290,6 @@ TgBot::InlineKeyboardMarkup::Ptr noteMenu() {
   button3->callbackData = "backToMainMenu";
   row3.push_back(button3);
 
-  keyboard->inlineKeyboard.push_back(row1);
-  keyboard->inlineKeyboard.push_back(row2);
   keyboard->inlineKeyboard.push_back(row3);
 
   return keyboard;
@@ -330,4 +330,51 @@ TgBot::InlineKeyboardMarkup::Ptr showHomeworkMenu() {
   return keyboard;
 }
 
-void refreshCurrentTime(boost::posix_time::ptime &currentTime) { currentTime = boost::posix_time::second_clock::universal_time(); }
+TgBot::InlineKeyboardMarkup::Ptr notificationsMenu(bool isOn1, bool isOn2, bool adminAccess) {
+  TgBot::InlineKeyboardMarkup::Ptr keyboard(new TgBot::InlineKeyboardMarkup);
+
+  std::vector<TgBot::InlineKeyboardButton::Ptr> row1;
+  TgBot::InlineKeyboardButton::Ptr button1(new TgBot::InlineKeyboardButton);
+  std::string isOnStr1 = (isOn1 ? "ON" : "OFF");
+  button1->text = "Advance notice of homework submission -> " + isOnStr1;
+  button1->callbackData = "advanceNotice";
+  row1.push_back(button1);
+
+  std::vector<TgBot::InlineKeyboardButton::Ptr> row2;
+  TgBot::InlineKeyboardButton::Ptr button2(new TgBot::InlineKeyboardButton);
+  std::string isOnStr2 = (isOn2 ? "ON" : "OFF");
+  button2->text = "Notifications from admins -> " + isOnStr2;
+  button2->callbackData = "adminNotice";
+  row2.push_back(button2);
+
+  if (adminAccess) {
+    std::vector<TgBot::InlineKeyboardButton::Ptr> row3;
+    TgBot::InlineKeyboardButton::Ptr button3(new TgBot::InlineKeyboardButton);
+    button3->text = "Send message to your group";
+    button3->callbackData = "globalMessage";
+    row3.push_back(button3);
+
+    keyboard->inlineKeyboard.push_back(row3);
+  }
+
+  std::vector<TgBot::InlineKeyboardButton::Ptr> row4;
+  TgBot::InlineKeyboardButton::Ptr button4(new TgBot::InlineKeyboardButton);
+  button4->text = "Menu";
+  button4->callbackData = "backToMainMenu";
+  row4.push_back(button4);
+
+  keyboard->inlineKeyboard.push_back(row1);
+  keyboard->inlineKeyboard.push_back(row2);
+  keyboard->inlineKeyboard.push_back(row4);
+
+  return keyboard;
+}
+
+void refreshCurrentTime(boost::posix_time::ptime &currentTime) { currentTime = boost::posix_time::second_clock::local_time(); }
+
+int getHours(boost::posix_time::ptime &currentTime) {
+  boost::posix_time::time_duration timeOfDay = currentTime.time_of_day();
+
+  int hours = timeOfDay.hours();
+  return hours;
+}

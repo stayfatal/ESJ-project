@@ -1,89 +1,102 @@
 #ifndef DATA_BASE_H
 #define DATA_BASE_H
 
+#include <boost/asio.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include <fstream>
 #include <iostream>
 
-#include <boost/asio.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
 using std::string;
-enum class Day {Monday = 1, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday};
+enum class Day { Monday = 1, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday };
 struct date {
-
   Day day;
   int hours;
   int minutes;
-  
 };
+
 std::ostream& operator << (std::ostream& out, const Day& d);
 
-
+enum class Fields { Rights = 1, Notifications_1, Notifications_2, Group, UserName, Password, UserId, Week = 1, dayOfWeek, Subject, Task };
 
 class DataBase {
  protected:
-  std::string fileName;
-  std::string path;
-  std::string folder = "/home/stayfatal/projects/ESJ-project/data/";
+  string fileName;
+  string path;
+  string folder = "/home/stayfatal/projects/ESJ-project/data/";
 
  public:
   DataBase(string fileName);
 
-  int findFieldLine(string str, int fieldNum);
+  int findFieldLine(string str, Fields fieldNum);
 
-  static std::string findField(std::string str, int fieldNum);
+  static string findField(string str, Fields fieldNum);
+
+  void addToDb(date date);
 
   int findLine(int index, int length, string strLine);
 
   void setLine(int line, string newLine, bool overwrite = true);
 
-  std::string getLine(int line);
+  string setField(string str, Fields fieldNum, string newField);
 
-  void addToDb(std::string str);
-  void addToDb(date date);
+  void setFieldLine(int line, string newField, Fields fieldNum);
+
+  string getLine(int line);
+
+  void addToDb(string str);
 };
 
-class RegistrationDataBase : private DataBase {
+class UserDataBase : private DataBase {
  public:
-  RegistrationDataBase(string fileName);
+  UserDataBase(string fileName);
 
   bool registration(string name, int64_t chatId);
 
   bool isRegistered(int64_t chatId);
 
-  std::string getGroup(int64_t chatId);
+  string getGroup(int64_t chatId);
 
   bool isAdmin(int64_t chatId);
+
+  bool isAdvanceNotificationsOn(int64_t chatId);
+
+  void switchAdvanceNotifications(int64_t chatId,string switchData);
+
+  void switchAdminNotifications(int64_t chatId,string switchData);
+
+  bool isAdminNotificationsOn(int64_t chatId);
+
+  std::vector<int64_t> getListOfAvalibleUsers(std::string task);
 };
 
 class HomeworkDataBase : private DataBase {
  private:
  public:
   int week;
-  std::string group;
-  HomeworkDataBase(std::string group, int week);
+  string group;
+  HomeworkDataBase(string group, int week);
 
-  bool addHomework(std::string line);
-  static int getWeek(std::string str);
+  bool addHomework(string line);
+  static int getWeek(string str);
 
   static int getCurrentWeek(boost::posix_time::ptime now);
+  static string getCurrentDayOfWeek(boost::posix_time::ptime now);
 
-  std::string showHomework();
+  string showHomework();
 };
 
-class TeacherDataBase: private DataBase{
-  private:
-  public:
-    std::string subject;
-    std::string first_name;
-    std::string surname;
-    std::string father_name;
-    TeacherDataBase(std::string subject, std::string surname);
+class TeacherDataBase : private DataBase {
+ private:
+ public:
+  string subject;
+  string first_name;
+  string surname;
+  string father_name;
+  TeacherDataBase(string subject, string surname);
 
-    bool addDate(date date);
-    std::string showShedule();
-    std::string showTeacherInformation(); //почта, номер
-
-//учитывать группу
+  bool addDate(date date);
+  string showTeacherInformation();
+  string showShedule();
 };
 
 #endif
