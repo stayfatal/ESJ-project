@@ -80,10 +80,10 @@ class TeacherDataBase: private DataBase{
     TeacherDataBase(std::string subject, std::string surname);
 
     bool addDate(date date);
-    std::string showTeacherInformation();
     std::string showShedule();
+    std::string showTeacherInformation(); //почта, номер
 
-
+//учитывать группу
 };
 
 #endif

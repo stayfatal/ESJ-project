@@ -177,7 +177,7 @@ int HomeworkDataBase::getWeek(std::string str) { return stoi(findField(str, 1));
 
 // Функция форматирует строку с полями и записывает в базу данных
 bool HomeworkDataBase::addHomework(std::string line) {
-  std::vector<string> weekDays = {"Понедельник", "Вторник", "Среда", "Черверг", "Пятница", "Суббота", "Воскресенье"};
+  std::vector<string> weekDays = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
   string weekDay = findField(line, 2);
   for (auto i = weekDays.begin(); i != weekDays.end(); i++) {
     if (*i == weekDay) {
@@ -192,7 +192,7 @@ bool HomeworkDataBase::addHomework(std::string line) {
 }
 
 std::string HomeworkDataBase::showHomework() {
-  std::vector<string> weekDays = {"Понедельник", "Вторник", "Среда", "Черверг", "Пятница", "Суббота", "Воскресенье"};
+  std::vector<string> weekDays = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
   std::string result;
   for (auto i = weekDays.begin(); i != weekDays.end(); i++) {
     result+=*i+"\n";
@@ -223,9 +223,23 @@ bool TeacherDataBase::addDate(date date){
 void DataBase::addToDb(date Date) {
   std::ofstream out(path, std::ios::app);
   if (out.is_open()) {
-    out << "Week day: " << Date.day << ". Time: " << Date.hours << ":"  << Date.minutes << std::endl;
+    out << "Week day: " << Date.day << " Time: " << Date.hours << ":"  << Date.minutes << std::endl;
     out.close();
   }
+}
+
+std::string operator += (std::string str, const Day& d){
+   switch(d) {
+      case Day::Monday: return (str += "Monday");
+      case Day::Tuesday: return (str += "Tuesday");
+      case Day::Wednesday:return (str += "Wednesday");
+      case Day::Thursday:return (str += "Thursday");
+      case Day::Friday:return (str += "Friday");
+      case Day::Saturday:return (str += "Saturday");
+      case Day::Sunday:return (str += "Sunday");
+
+   }
+   return (str);
 }
 
 std::ostream& operator << (std::ostream& out, const Day& d){
@@ -240,4 +254,43 @@ std::ostream& operator << (std::ostream& out, const Day& d){
 
    }
    return (out);
+}
+
+bool operator == (std::string str, const Day& d){
+   switch(d) {
+      case Day::Monday: return (str == "Monday");
+      case Day::Tuesday: return (str == "Tuesday");
+      case Day::Wednesday:return (str == "Wednesday");
+      case Day::Thursday:return (str == "Thursday");
+      case Day::Friday:return (str == "Friday");
+      case Day::Saturday:return (str == "Saturday");
+      case Day::Sunday:return (str == "Sunday");
+   }
+   return false;
+}
+
+
+
+std::string TeacherDataBase::showShedule() {
+  std::string result;
+
+  for ( int i = 0; i < 7; i++ ){
+    Day day = static_cast<Day>(i);
+  
+    result+=day;
+    result += '\n';
+    std::ifstream in(path);
+    if (in.is_open()) {
+      std::string temp;
+      while (getline(in, temp)) {
+        if (findField(temp, 2) == day) {
+          result += findField(temp, 3) + " -> " + findField(temp, 5) + "\n";
+        }
+      }
+    }
+    in.close();
+    result+="\n";
+  
+  }
+  return result;
 }
