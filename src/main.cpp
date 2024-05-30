@@ -19,6 +19,7 @@ TgBot::InlineKeyboardMarkup::Ptr mainMenu();
 TgBot::InlineKeyboardMarkup::Ptr homeworkMenu(bool adminAccess);
 TgBot::InlineKeyboardMarkup::Ptr showHomeworkMenu();
 TgBot::InlineKeyboardMarkup::Ptr notificationsMenu(bool isOn1, bool isOn2, bool adminAccess);
+TgBot::InlineKeyboardMarkup::Ptr returnToMenu();
 void configureFiles(std::unordered_map<std::string, std::vector<HomeworkDataBase>> &homeWorkBases);
 void refreshCurrentTime(boost::posix_time::ptime &currentTime);
 int getHours(boost::posix_time::ptime &currentTime);
@@ -52,39 +53,10 @@ int main() {
     if (!userDataBase.isRegistered(message->chat->id)) {
       users[message->chat->id].isTyping = true;
       users[message->chat->id].process = "registration";
-      bot.getApi().sendMessage(message->chat->id, "Введите ваши данные в формате:\nГруппа:ФИО:Пароль\nex: ИУ7-15Б:Иванов Иван Иванович:123");
+      bot.getApi().sendMessage(message->chat->id,
+                               "Введите ваши данные в формате:\nГруппа:ФИО:Пароль\nex: ИУ7-15Б:Иванов Иван Иванович:123\n/cancel для отмены");
     } else {
       bot.getApi().sendMessage(message->chat->id, "Вы уже зарегистрированы");
-    }
-  });
-
-  // Обработка данных который пользователь вводит с клавиатуры
-  bot.getEvents().onNonCommandMessage([&bot, &userDataBase, &users, &homeWorkBases](TgBot::Message::Ptr message) {
-    if (users[message->chat->id].isTyping && users[message->chat->id].process == "registration") {
-      if (userDataBase.registration(message->text, message->chat->id)) {
-        bot.getApi().sendMessage(message->chat->id,
-                                 "Вы успешно зарегистрировались в системе, теперь у вас есть возможность пользоваться всеми функциями бота, для этого напишите, /menu");
-      } else {
-        bot.getApi().sendMessage(message->chat->id, "Ваше ФИО не было найдено в базе, либо ваш пароль неверен");
-      }
-      users[message->chat->id].isTyping = false;
-    } else if (users[message->chat->id].isTyping && users[message->chat->id].process == "homework") {
-      std::string group = userDataBase.getGroup(message->chat->id);
-      int week = HomeworkDataBase::getWeek(message->text);
-
-      homeWorkBases[group][week - 1].addHomework(message->text);
-      bot.getApi().sendMessage(message->chat->id, "Ваше домашнее задание успешно записано");
-
-      users[message->chat->id].isTyping = false;
-    } else if (users[message->chat->id].isTyping && users[message->chat->id].process == "globalMes") {
-      std::vector<int64_t> list = userDataBase.getListOfAvalibleUsers("globalMes");
-      for (auto i = list.begin(); i != list.end(); i++) {
-        if (*i != message->chat->id and *i!=0) {
-          bot.getApi().sendMessage(*i, message->text);
-        }
-      }
-      bot.getApi().sendMessage(message->chat->id, "Ваше сообщение было отправлено");
-      users[message->chat->id].isTyping=false;
     }
   });
 
@@ -94,19 +66,51 @@ int main() {
       if (userDataBase.isRegistered(message->chat->id)) {
         bot.getApi().sendMessage(message->chat->id, "Вот что я умею", false, 0, mainMenu());
       } else {
-        bot.getApi().sendMessage(message->chat->id, "Зарегистрируйтесь чтобы использовать функции бота. Для регистрации используйте команду /register");
+        bot.getApi().sendMessage(message->chat->id,
+                                 "Зарегистрируйтесь чтобы использовать функции бота. Для регистрации используйте команду /register");
       }
     }
   });
 
-  // Обработка команды homework
-  bot.getEvents().onCommand("homework", [&bot, &users, &userDataBase](TgBot::Message::Ptr message) {
-    if (!users[message->chat->id].isTyping) {
-      if (userDataBase.isRegistered(message->chat->id)) {
-        bot.getApi().sendMessage(message->chat->id, "Доступные команды:", false, 0, homeworkMenu(userDataBase.isAdmin(message->chat->id)));
+  // Обработка команды cancel
+  bot.getEvents().onCommand("cancel", [&bot, &userDataBase, &users](TgBot::Message::Ptr message) {
+    if (users[message->chat->id].isTyping) {
+      users[message->chat->id].isTyping = false;
+      bot.getApi().sendMessage(message->chat->id, "Операция отменена",false,0,returnToMenu());
+    }
+  });
+
+  // Обработка данных который пользователь вводит с клавиатуры
+  bot.getEvents().onNonCommandMessage([&bot, &userDataBase, &users, &homeWorkBases](TgBot::Message::Ptr message) {
+    if (users[message->chat->id].isTyping && users[message->chat->id].process == "registration") {
+      if (userDataBase.registration(message->text, message->chat->id)) {
+        bot.getApi().sendMessage(
+            message->chat->id,
+            "Вы успешно зарегистрировались в системе, теперь у вас есть возможность пользоваться всеми функциями бота, для этого напишите, /menu");
       } else {
-        bot.getApi().sendMessage(message->chat->id, "Зарегистрируйтесь чтобы использовать функции бота. Для регистрации используйте команду /register");
+        bot.getApi().sendMessage(message->chat->id, "Ваше ФИО не было найдено в базе, либо ваш пароль неверен");
       }
+      users[message->chat->id].isTyping = false;
+      return;
+    } else if (users[message->chat->id].isTyping && users[message->chat->id].process == "homework") {
+      std::string group = userDataBase.getGroup(message->chat->id);
+      int week = HomeworkDataBase::getWeek(message->text);
+
+      homeWorkBases[group][week - 1].addHomework(message->text);
+      bot.getApi().sendMessage(message->chat->id, "Ваше домашнее задание успешно записано");
+
+      users[message->chat->id].isTyping = false;
+      return;
+    } else if (users[message->chat->id].isTyping && users[message->chat->id].process == "globalMes") {
+      std::vector<int64_t> list = userDataBase.getListOfAvalibleUsers("globalMes");
+      for (auto i = list.begin(); i != list.end(); i++) {
+        if (*i != message->chat->id and *i != 0) {
+          bot.getApi().sendMessage(*i, message->text);
+        }
+      }
+      bot.getApi().sendMessage(message->chat->id, "Ваше сообщение было отправлено");
+      users[message->chat->id].isTyping = false;
+      return;
     }
   });
 
@@ -140,8 +144,9 @@ int main() {
     } else if (query->data == "addHomework") {
       // addHomework
       bot.getApi().deleteMessage(query->message->chat->id, query->message->messageId);
-      bot.getApi().sendMessage(query->message->chat->id,
-                               "Нашишите мне домашнее задание которое хотите добавить в формате:\nНомер недели:День недели:Предмет:Задание");
+      bot.getApi().sendMessage(
+          query->message->chat->id,
+          "Нашишите мне домашнее задание которое хотите добавить в формате:\nНомер недели:День недели:Предмет:Задание\n/cancel для отмены");
       users[query->message->chat->id].process = "homework";
       users[query->message->chat->id].isTyping = true;
     } else if (query->data == "prevWeek") {
@@ -163,6 +168,7 @@ int main() {
                                      query->message->chat->id, query->message->messageId, "", "", false, showHomeworkMenu());
       }
     } else if (query->data == "advanceNotice") {
+      // advanceNotice
       if (userDataBase.isAdvanceNotificationsOn(query->message->chat->id)) {
         userDataBase.switchAdvanceNotifications(query->message->chat->id, "0");
       } else {
@@ -173,6 +179,7 @@ int main() {
           notificationsMenu(userDataBase.isAdvanceNotificationsOn(query->message->chat->id),
                             userDataBase.isAdminNotificationsOn(query->message->chat->id), userDataBase.isAdmin(query->message->chat->id)));
     } else if (query->data == "adminNotice") {
+      // adminNotice
       if (userDataBase.isAdminNotificationsOn(query->message->chat->id)) {
         userDataBase.switchAdminNotifications(query->message->chat->id, "0");
       } else {
@@ -183,10 +190,11 @@ int main() {
           notificationsMenu(userDataBase.isAdvanceNotificationsOn(query->message->chat->id),
                             userDataBase.isAdminNotificationsOn(query->message->chat->id), userDataBase.isAdmin(query->message->chat->id)));
     } else if (query->data == "globalMessage") {
+      // globalMessage
       users[query->message->chat->id].isTyping = true;
       users[query->message->chat->id].process = "globalMes";
       bot.getApi().deleteMessage(query->message->chat->id, query->message->messageId);
-      bot.getApi().sendMessage(query->message->chat->id, "Напиши мне текст сообщения");
+      bot.getApi().sendMessage(query->message->chat->id, "Напиши мне текст сообщения\n/cancel для отмены");
     }
   });
 
@@ -220,19 +228,9 @@ void setCommandsMenu(TgBot::Bot &bot) {
   menuCommand->command = "menu";
   menuCommand->description = "Меню";
 
-  TgBot::BotCommand::Ptr homeworkCommand(new TgBot::BotCommand);
-  homeworkCommand->command = "homework";
-  homeworkCommand->description = "Домашнее задание";
-
-  TgBot::BotCommand::Ptr notifyCommand(new TgBot::BotCommand);
-  notifyCommand->command = "notifications";
-  notifyCommand->description = "Уведомления";
-
   commands.push_back(startCommand);
   commands.push_back(regCommand);
   commands.push_back(menuCommand);
-  commands.push_back(homeworkCommand);
-  commands.push_back(notifyCommand);
 
   bot.getApi().setMyCommands(commands);
 }
@@ -368,6 +366,20 @@ TgBot::InlineKeyboardMarkup::Ptr notificationsMenu(bool isOn1, bool isOn2, bool 
   keyboard->inlineKeyboard.push_back(row1);
   keyboard->inlineKeyboard.push_back(row2);
   keyboard->inlineKeyboard.push_back(row4);
+
+  return keyboard;
+}
+
+TgBot::InlineKeyboardMarkup::Ptr returnToMenu() {
+  TgBot::InlineKeyboardMarkup::Ptr keyboard(new TgBot::InlineKeyboardMarkup);
+
+  std::vector<TgBot::InlineKeyboardButton::Ptr> row1;
+  TgBot::InlineKeyboardButton::Ptr button1(new TgBot::InlineKeyboardButton);
+  button1->text = "Обратно в меню";
+  button1->callbackData = "backToMainMenu";
+  row1.push_back(button1);
+
+  keyboard->inlineKeyboard.push_back(row1);
 
   return keyboard;
 }
