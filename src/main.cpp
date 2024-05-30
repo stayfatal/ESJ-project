@@ -4,6 +4,9 @@
 #include <cstdio>
 
 #include "dataBase/dataBase.h"
+#include "dataBase/homeworkDataBase.h"
+#include "dataBase/teacherDataBase.h"
+#include "dataBase/userDataBase.h"
 
 struct User {
   std::string process;
