@@ -1,8 +1,11 @@
 #ifndef USER_DATA_BASE_H
 #define USER_DATA_BASE_H
 
-#include "dataBase.h"
 #include <vector>
+
+#include "dataBase.h"
+
+enum class Group { Group21 = 1, Group22, Group23, Group24, Group25 };
 
 class UserDataBase : private DataBase {
  public:
@@ -18,9 +21,9 @@ class UserDataBase : private DataBase {
 
   bool isAdvanceNotificationsOn(int64_t chatId);
 
-  void switchAdvanceNotifications(int64_t chatId,string switchData);
+  void switchAdvanceNotifications(int64_t chatId, string switchData);
 
-  void switchAdminNotifications(int64_t chatId,string switchData);
+  void switchAdminNotifications(int64_t chatId, string switchData);
 
   bool isAdminNotificationsOn(int64_t chatId);
 

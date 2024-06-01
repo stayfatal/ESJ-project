@@ -6,6 +6,8 @@
 
 #include "dataBase.h"
 
+enum class Day { Monday = 1, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday };
+
 class HomeworkDataBase : private DataBase {
  private:
  public:

@@ -4,12 +4,7 @@
 #include <iostream>
 
 using std::string;
-enum class Day { Monday = 1, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday };
-struct date {
-  Day day;
-  int hours;
-  int minutes;
-};
+
 
 enum class Fields { Rights = 1, Notifications_1, Notifications_2, Group, UserName, Password, UserId, Week = 1, dayOfWeek, Subject, Task };
 
@@ -41,6 +36,5 @@ class DataBase {
   void addToDb(string str);
 };
 
-std::string to_string(const Day& d);
 
 #endif

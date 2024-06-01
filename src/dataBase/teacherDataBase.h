@@ -5,6 +5,12 @@
 
 using std::string;
 
+struct date {
+  Day day;
+  int hours;
+  int minutes;
+};
+
 class TeacherDataBase : private DataBase {
  private:
  public:
@@ -18,5 +24,7 @@ class TeacherDataBase : private DataBase {
   string showTeacherInformation();
   string showShedule();
 };
+
+std::string to_string(const Day& d);
 
 #endif
