@@ -1,4 +1,4 @@
-#include "keybord.h"
+#include "keybords.h"
 
 // Функция возвращающая кнопки основного меню
 TgBot::InlineKeyboardMarkup::Ptr mainMenu() {
