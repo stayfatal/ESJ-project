@@ -7,7 +7,13 @@ using std::string;
 
 
 enum class Fields { Rights = 1, Notifications_1, Notifications_2, Group, UserName, Password, UserId, Week = 1, dayOfWeek, Subject, Task };
-
+enum class Day { Monday = 1, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday };
+struct date {
+  Day day;
+  int hours;
+  int minutes;
+};
+std::string to_string(const Day& d);
 class DataBase {
  protected:
   string fileName;
@@ -16,7 +22,8 @@ class DataBase {
 
  public:
   DataBase(string fileName);
-
+  void virtual create_path(std::string) = 0;  // fabric pattern (virtual constructor)
+  void virtual create_files_structure(std::string) = 0;
   int findFieldLine(string str, Fields fieldNum);
 
   static string findField(string str, Fields fieldNum);

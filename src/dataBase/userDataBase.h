@@ -11,6 +11,9 @@ class UserDataBase : private DataBase {
  public:
   UserDataBase(string fileName);
 
+  void create_path(string) override;
+  void create_files_structure(string) override;
+
   bool registration(string name, int64_t chatId);
 
   bool isRegistered(int64_t chatId);

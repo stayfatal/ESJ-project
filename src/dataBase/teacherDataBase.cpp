@@ -19,6 +19,14 @@ void DataBase::addToDb(date Date) {
   }
 }
 
+void TeacherDataBase::create_path(string last_path){
+  path = folder + last_path;
+}
+void TeacherDataBase::create_files_structure(string filename){
+  fileName = filename;
+}
+
+
 std::string TeacherDataBase::showShedule() {
   std::string result;
 

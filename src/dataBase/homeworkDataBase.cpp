@@ -4,7 +4,15 @@
 #include <fstream>
 
 HomeworkDataBase::HomeworkDataBase(string group, int week)
-    : DataBase("weekHomework/" + group + "/" + std::to_string(week) + ".txt"), week(week), group(group){};
+    : DataBase("weekHomework/" + group + "/"), week(week), group(group){};
+
+
+void HomeworkDataBase::create_path(string last_path){
+  path = folder + last_path;
+}
+void HomeworkDataBase::create_files_structure(string filename){
+  fileName = filename;
+}
 
 // Функция возвращает текущую неделю
 int HomeworkDataBase::getCurrentWeek(boost::posix_time::ptime now) {

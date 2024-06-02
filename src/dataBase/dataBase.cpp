@@ -14,9 +14,9 @@ using std::string;
 using std::to_string;
 using std::vector;
 
-DataBase::DataBase(string fileName) {
-  this->fileName = fileName;
-  this->path = folder + fileName;
+DataBase::DataBase(string fileName) { // builder pattern
+  create_path(folder);
+  create_files_structure(fileName);
 }
 
 string to_string(const Day& d) {

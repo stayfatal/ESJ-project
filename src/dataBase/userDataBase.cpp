@@ -21,6 +21,13 @@ bool UserDataBase::isRegistered(int64_t chatId) {
   }
 }
 
+void UserDataBase::create_path(string last_path){
+  path = folder + last_path;
+}
+void UserDataBase::create_files_structure(string filename){
+  fileName = filename;
+}
+
 void UserDataBase::switchAdvanceNotifications(int64_t chatId, string switchData) {
   int line = findFieldLine(std::to_string(chatId), Fields::UserId);
   setFieldLine(line, switchData, Fields::Notifications_1);

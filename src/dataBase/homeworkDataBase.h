@@ -6,15 +6,14 @@
 
 #include "dataBase.h"
 
-enum class Day { Monday = 1, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday };
-
 class HomeworkDataBase : private DataBase {
  private:
  public:
   int week;
   string group;
   HomeworkDataBase(string group, int week);
-
+  void create_path(string) override;
+  void create_files_structure(string) override;
   bool addHomework(string line);
   static int getWeek(string str);
 
